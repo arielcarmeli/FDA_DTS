@@ -12,22 +12,22 @@ library(scales) # for problem 1.2a. Need to make sure scales is installed!
 fda_approvals <- read.csv('FDA_Drug_Trials_Snapshots_2015-19.csv')
 
 # Change class type of select variables to aid in data processing and visualization
-fda_approvals$Trial_size <- as.numeric(as.character(fda_approvals$Trial_size))
+fda_approvals$Enrollment <- as.numeric(as.character(fda_approvals$Enrollment))
 fda_approvals$Therapeutic_Area <- as.character(fda_approvals$Therapeutic_Area)
 fda_approvals$Brand_Name <- as.character(fda_approvals$Brand_Name)
 fda_approvals$United_States <- as.numeric(as.character(fda_approvals$United_States))
 
 # Add a column to group trial size
 fda_approvals <- fda_approvals %>% 
-  mutate( Trial_size_grouped = case_when(
-    Trial_size < 100 ~ "a. 1-99 patients", 
-    Trial_size >= 100 & Trial_size < 200 ~ "b. 100-199 patients", 
-    Trial_size >= 200 & Trial_size < 300 ~ "c. 200-299 patients",
-    Trial_size >= 300 & Trial_size < 500 ~ "d. 300-499 patients",
-    Trial_size >= 500 & Trial_size < 1000 ~ "e. 500-999 patients",
-    Trial_size >= 1000 & Trial_size < 2000 ~ "f. 1000-1999 patients",
-    Trial_size >= 2000  ~ "g. Over 2000 patients"
-  ), .after = Trial_size)
+  mutate( Enrollment_bucket = case_when(
+    Enrollment < 100 ~ "a. 1-99 patients", 
+    Enrollment >= 100 & Enrollment < 200 ~ "b. 100-199 patients", 
+    Enrollment >= 200 & Enrollment < 300 ~ "c. 200-299 patients",
+    Enrollment >= 300 & Enrollment < 500 ~ "d. 300-499 patients",
+    Enrollment >= 500 & Enrollment < 1000 ~ "e. 500-999 patients",
+    Enrollment >= 1000 & Enrollment < 2000 ~ "f. 1000-1999 patients",
+    Enrollment >= 2000  ~ "g. Over 2000 patients"
+  ), .after = Enrollment)
 
 # Add a column for non-hispanic 
 fda_approvals <- fda_approvals %>% mutate(Non_Hispanic = 100 - Hispanic, .after = Hispanic)
@@ -85,16 +85,15 @@ ui <- fluidPage(
                         "Ethnicity",
                         #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
                         choices= c("Hispanic", "Non_Hispanic"),
-                        selected = c("Hispanic", "Non_Hispanic"),
+                        #selected = c("Hispanic", "Non_Hispanic"),
                         multiple=T
                     ),
                     
-                    #selectInput(
-                    #    "group_by",
-                    #    "Group By",
-                        # Problem 1.3.2 - Replace instances of "_" with a space (" ")
-                    #    choices=str_replace(c("Month", "Week", "Day", "Weekday", "Age_Group", "Body_Part"), "_", " ")
-                    #),
+                    selectInput(
+                        "label_by",
+                        "Label by",
+                        choices= c("None", "Year"),
+                    ),
                     
                     radioButtons( 
                         "is_TA_Stratified", 
@@ -132,6 +131,9 @@ ui <- fluidPage(
                    h2("Participation in individual FDA approvals"),
                    plotOutput("individualPlot"),
                    
+                   h2("Number of approvals by participation level"),
+                   plotOutput("participationCountPlot"),
+                   
                    h2("Approval Details"),
                    DT::dataTableOutput("approvalsTable"),
                 )
@@ -155,7 +157,7 @@ ui <- fluidPage(
                         "Ethnicity",
                         #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
                         choices= c("Hispanic", "Non_Hispanic"),
-                        selected = c("Hispanic", "Non_Hispanic"),
+                        #selected = c("Hispanic", "Non_Hispanic"),
                         multiple=T
                     ),
                    
@@ -202,22 +204,22 @@ server <- function(input, output) {
     print( "Processing data ..." )
 
     # Change class type of select variables to aid in data processing and visualization
-    fda_approvals$Trial_size <- as.numeric(as.character(fda_approvals$Trial_size))
+    fda_approvals$Enrollment <- as.numeric(as.character(fda_approvals$Enrollment))
     fda_approvals$Therapeutic_Area <- as.character(fda_approvals$Therapeutic_Area)
     fda_approvals$Brand_Name <- as.character(fda_approvals$Brand_Name)
     fda_approvals$United_States <- as.numeric(as.character(fda_approvals$United_States))
     
     # Add a column to group trial size
     fda_approvals <- fda_approvals %>% 
-      mutate( Trial_size_grouped = case_when(
-        Trial_size < 100 ~ "a. 1-99 patients", 
-        Trial_size >= 100 & Trial_size < 200 ~ "b. 100-199 patients", 
-        Trial_size >= 200 & Trial_size < 300 ~ "c. 200-299 patients",
-        Trial_size >= 300 & Trial_size < 500 ~ "d. 300-499 patients",
-        Trial_size >= 500 & Trial_size < 1000 ~ "e. 500-999 patients",
-        Trial_size >= 1000 & Trial_size < 2000 ~ "f. 1000-1999 patients",
-        Trial_size >= 2000  ~ "g. Over 2000 patients"
-      ), .after = Trial_size)
+      mutate( Enrollment_bucket = case_when(
+        Enrollment < 100 ~ "a. 1-99 patients", 
+        Enrollment >= 100 & Enrollment < 200 ~ "b. 100-199 patients", 
+        Enrollment >= 200 & Enrollment < 300 ~ "c. 200-299 patients",
+        Enrollment >= 300 & Enrollment < 500 ~ "d. 300-499 patients",
+        Enrollment >= 500 & Enrollment < 1000 ~ "e. 500-999 patients",
+        Enrollment >= 1000 & Enrollment < 2000 ~ "f. 1000-1999 patients",
+        Enrollment >= 2000  ~ "g. Over 2000 patients"
+      ), .after = Enrollment)
     
     # Add a column for non-hispanic 
     fda_approvals <- fda_approvals %>% mutate(Non_Hispanic = 100 - Hispanic, .after = Hispanic)
@@ -241,7 +243,7 @@ server <- function(input, output) {
     # reactive expression to filter selected approvals
     approvals <- reactive({
         selection <- fda_approvals_long %>%
-            select(Brand_Name, Therapeutic_Area, Indication, Demographic, Percentage, Approval_Year) %>%
+            select(Brand_Name, Therapeutic_Area, Indication, Enrollment, Demographic, Percentage, Approval_Year, Enrollment_bucket) %>%
             filter(Percentage != "NA") %>% 
             unique()
             #filter(Product_1 == input$product) %>%
@@ -296,10 +298,44 @@ server <- function(input, output) {
         selection
     })
     
+    # reactive expression for the count chart
+    approvals_count <- reactive({
+      selection <- fda_approvals_long %>% 
+        select(-Comparison) %>% 
+        select(-Compared) %>% 
+        filter(Percentage != "NA")
+
+      if ( !is.null( input$race ) | !is.null( input$ethnicity ) ) {
+        # Problem 1.3.1 - wrap "Body_Part" by stringr function str_to_title to match the input format
+        # Problem 1.3.2 - change "Body_Part in filter to `Body Part` to account for updated column name
+        #selection <- selection %>% filter( str_to_title(`Body Part`) %in% input$demographic )
+        selection <- selection %>% filter( Demographic %in% input$race | Demographic %in% input$ethnicity )
+      }
+      
+      if ( !is.null( input$year ) ) {
+        # Problem 1.3.1 - wrap "Body_Part" by stringr function str_to_title to match the input format
+        # Problem 1.3.2 - change "Body_Part in filter to `Body Part` to account for updated column name
+        #selection <- selection %>% filter( str_to_title(`Body Part`) %in% input$demographic )
+        selection <- selection %>% filter( Approval_Year %in% input$year )
+      }
+      
+      #selection$Approval_Year <- as.character(selection$Approval_Year)
+      
+      selection <- selection %>% 
+        group_by(Brand_Name, Demographic, Percentage, Approval_Year) %>% 
+        unique() %>% 
+        summarize(Count = n()) %>% 
+        group_by(Demographic, Percentage, Approval_Year) %>% 
+        summarize(Count = sum(Count))
+      
+      selection
+    })
+
+    
     # Reactive expression to filter selected approvals on the TA/disease tab 
     approvals_TA <- reactive({
       selection <- fda_approvals_long %>%
-        select(Brand_Name, Therapeutic_Area, Disease, Indication, Demographic, Percentage, Approval_Year) %>%
+        select(Brand_Name, Therapeutic_Area, Disease, Indication, Enrollment, Demographic, Percentage, Approval_Year, Enrollment_bucket) %>%
         filter(Percentage != "NA") %>% 
         unique()
 
@@ -363,7 +399,7 @@ server <- function(input, output) {
         
         plot <- approvals() %>% 
           ggplot(aes(Demographic, Percentage)) + 
-          geom_jitter(width = 0.2, aes(colour=Demographic)) + 
+          #geom_jitter(width = 0.2, aes(colour=Demographic)) + 
           theme(legend.position = "top", legend.title = element_blank()) +
           scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
           ggtitle("Demographic participation in clinical trials for FDA approvals")
@@ -374,6 +410,14 @@ server <- function(input, output) {
               scale_y_continuous(breaks = round(seq(min(0), max(100), by = 25),1))
         }
         
+        if ( input$label_by == "None" ) {
+          plot <- plot + geom_jitter(width = 0.2, aes(colour=Demographic))
+        }
+        
+        if ( input$label_by == "Year" ) {
+          plot <- plot + geom_jitter(width = 0.2, aes(colour=Approval_Year))
+        }
+
           #ggplot(approvals()) +
             #xlab( "Demographic" ) +
             #xlab( input$group_by ) +
@@ -401,11 +445,44 @@ server <- function(input, output) {
         plot
     })#, height = 800, width = 1200)
 
+    output$participationCountPlot <- renderPlot({
+
+      if ( input$label_by == "Year" ) {
+        # line plot - split by year
+        plot <- approvals_count() %>% 
+          filter(Percentage < 20) %>%
+          ggplot(aes(Percentage, y=Count, width=1, group = Approval_Year)) +
+          geom_line(aes(colour = Approval_Year), stat = "identity") +
+          xlab("Percent participation in trials for FDA approval") +
+          ylab("Number of FDA approvals") +
+          ggtitle("Number of FDA approvals that had <20% participation in trials by race") +
+          facet_wrap(~Demographic)
+        
+      }
+      else {
+        # bar chart - for all years
+        plot <- approvals_count() %>% 
+          group_by(Demographic, Percentage) %>% 
+          summarize(Count = sum(Count)) %>% 
+          filter(Percentage < 20) %>% 
+          ggplot(aes(Percentage, y=Count, width=1)) +
+          geom_bar(stat = "identity", position = 'dodge') +
+          geom_text(aes(label=Count), position = position_dodge(0.9), vjust=-0.3, size=4) +
+          xlab("Percent participation in trials for FDA approval") +
+          ylab("Number of FDA approvals") +
+          ggtitle("Number of FDA approvals that had <20% participation in trials by race") +
+          facet_wrap(~Demographic)
+      }
+      
+      plot
+    })
+    
     output$approvalsTable <- DT::renderDataTable(
-        #approvals() %>% select(Therapeutic_Area, Brand_Name, Approval_Year), options=list(pageLength=5)
-        #approvals(), options=list(pageLength=10)
-        approvals() %>% pivot_wider(names_from = Demographic, values_from = Percentage), 
+        approvals() %>% 
+          select(-Enrollment_bucket) %>% 
+          pivot_wider(names_from = Demographic, values_from = Percentage), 
           options=list(pageLength=10)
+
     )
     
     output$TA_individualPlot <- renderPlot({
@@ -420,15 +497,16 @@ server <- function(input, output) {
       if ( input$is_Disease_Stratified ) {
         plot <- plot + 
           facet_wrap(~Disease) + 
-          scale_y_continuous(breaks = round(seq(min(0), max(100), by = 25),1))
+          scale_y_continuous(breaks = round(seq(min(0), max(100), by = 10),1))
       }
       
       plot
     })
     
     output$TA_approvalsTable <- DT::renderDataTable(
-      approvals_TA() %>% pivot_wider(names_from = Demographic, values_from = Percentage), 
-      options=list(pageLength=10)
+      approvals_TA() %>% 
+        select(-Enrollment_bucket) %>%
+        pivot_wider(names_from = Demographic, values_from = Percentage), options=list(pageLength=10)
     )
     
     #output$summaryText <- renderText(
