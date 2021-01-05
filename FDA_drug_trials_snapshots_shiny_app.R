@@ -4,7 +4,7 @@
 library(shiny)
 library(tidyverse)
 library(lubridate)
-library(bmi713neiss)
+library(dplyr)
 
 # install.packages("scales")
 library(scales) # for problem 1.2a. Need to make sure scales is installed!
@@ -61,16 +61,6 @@ ui <- fluidPage(
                     #    "Filter Narratives By"
                     #),
         
-                    # SOLUTION GROUP EXERCISE
-                    #sliderInput(
-                    #    "age",
-                    #    "Filter Age By",
-                    #    min=0,
-                    #    max=99,
-                    #    value=c(0, 99)
-                    #),
-        
-                    # SOLUTION GROUP EXERCISE
                     selectInput(
                         "race",
                         "Race",
@@ -89,10 +79,18 @@ ui <- fluidPage(
                         multiple=T
                     ),
                     
-                    selectInput(
-                        "label_by",
-                        "Label by",
-                        choices= c("None", "Year"),
+                    #selectInput(
+                    #    "label_by",
+                    #    "Label by",
+                    #    choices= c("None", "Year"),
+                    #),
+                    
+                    sliderInput(
+                      "participation",
+                      "Filter participation by",
+                      min=0,
+                      max=100,
+                      value=c(0, 100)
                     ),
                     
                     radioButtons( 
@@ -103,22 +101,20 @@ ui <- fluidPage(
                         selected=FALSE
                     ),
                     
-                    # SOLUTION GROUP EXERCISE
-                    #radioButtons( 
-                    #    "isDiagnosisStratified", 
-                    #    "Stratify by Diagnosis?", 
-                    #    choiceNames=list( "Yes", "No" ), 
-                    #    choiceValues=list(TRUE,FALSE),
-                    #    selected=FALSE
-                    #),
-                    
-                    # Problem 1.1 - add UI code to capture years
                     selectInput(
                         "year",
                         "Year(s)",
                         choices=unique(fda_approvals$Approval_Year),
                         selected = c(2015, 2016, 2017, 2018, 2019),
                         multiple=T
+                    ),
+                    
+                    radioButtons( 
+                      "is_Year_labelled", 
+                      "Label by Year?", 
+                      choiceNames=list( "Yes", "No" ), 
+                      choiceValues=list(TRUE,FALSE),
+                      selected=FALSE
                     )#,
                     
                     , width = 3
@@ -398,7 +394,9 @@ server <- function(input, output) {
     output$individualPlot <- renderPlot({
         
         plot <- approvals() %>% 
-          ggplot(aes(Demographic, Percentage)) + 
+          filter(Percentage >= input$participation[1]) %>% 
+          filter(Percentage <= input$participation[2]) %>% 
+          ggplot(aes(Demographic, Percentage)) +
           #geom_jitter(width = 0.2, aes(colour=Demographic)) + 
           theme(legend.position = "top", legend.title = element_blank()) +
           scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
@@ -410,12 +408,11 @@ server <- function(input, output) {
               scale_y_continuous(breaks = round(seq(min(0), max(100), by = 25),1))
         }
         
-        if ( input$label_by == "None" ) {
-          plot <- plot + geom_jitter(width = 0.2, aes(colour=Demographic))
-        }
-        
-        if ( input$label_by == "Year" ) {
+        if ( input$is_Year_labelled ) {
           plot <- plot + geom_jitter(width = 0.2, aes(colour=Approval_Year))
+        }
+        else{
+          plot <- plot + geom_jitter(width = 0.2, aes(colour=Demographic))
         }
 
           #ggplot(approvals()) +
@@ -446,17 +443,18 @@ server <- function(input, output) {
     })#, height = 800, width = 1200)
 
     output$participationCountPlot <- renderPlot({
-
-      if ( input$label_by == "Year" ) {
+      
+      if ( input$is_Year_labelled ) {
         # line plot - split by year
         plot <- approvals_count() %>% 
-          filter(Percentage < 20) %>%
+          filter(Percentage >= input$participation[1]) %>% 
+          filter(Percentage <= input$participation[2]) %>% 
           ggplot(aes(Percentage, y=Count, width=1, group = Approval_Year)) +
           geom_line(aes(colour = Approval_Year), stat = "identity") +
           xlab("Percent participation in trials for FDA approval") +
           ylab("Number of FDA approvals") +
-          ggtitle("Number of FDA approvals that had <20% participation in trials by race") +
-          facet_wrap(~Demographic)
+          ggtitle("Number of FDA approvals by participation in trial") +
+          facet_wrap(~Demographic, ncol=1)
         
       }
       else {
@@ -464,14 +462,15 @@ server <- function(input, output) {
         plot <- approvals_count() %>% 
           group_by(Demographic, Percentage) %>% 
           summarize(Count = sum(Count)) %>% 
-          filter(Percentage < 20) %>% 
+          filter(Percentage >= input$participation[1]) %>% 
+          filter(Percentage <= input$participation[2]) %>% 
           ggplot(aes(Percentage, y=Count, width=1)) +
           geom_bar(stat = "identity", position = 'dodge') +
           geom_text(aes(label=Count), position = position_dodge(0.9), vjust=-0.3, size=4) +
           xlab("Percent participation in trials for FDA approval") +
           ylab("Number of FDA approvals") +
-          ggtitle("Number of FDA approvals that had <20% participation in trials by race") +
-          facet_wrap(~Demographic)
+          ggtitle("Number of FDA approvals by participation in trial") +
+          facet_wrap(~Demographic, ncol=1)
       }
       
       plot
