@@ -1,0 +1,1010 @@
+---
+title: 'FDA Drug Trials Snapshots 2015-2019 <br> Race, ethnicty participation in clinical trials'
+author: "Ariel Carmeli"
+date: "December 2020"
+output:
+  html_document:
+    toc: yes
+    toc_depth: 2
+  pdf_document:
+    toc: yes
+    toc_depth: '2'
+---
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(forcats)
+library(knitr)
+```
+
+
+```{r, include=FALSE}
+# Read in clinical trial data
+fda_approvals <- read.csv('FDA_Drug_Trials_Snapshots_2015-19.csv')
+
+# Change class type of select variables to aid in data processing and visualization
+fda_approvals$Trial_size <- as.numeric(as.character(fda_approvals$Trial_size))
+fda_approvals$Therapeutic_Area <- as.character(fda_approvals$Therapeutic_Area)
+fda_approvals$Brand_Name <- as.character(fda_approvals$Brand_Name)
+fda_approvals$United_States <- as.numeric(as.character(fda_approvals$United_States))
+
+# Add a column to group trial size
+fda_approvals <- fda_approvals %>% 
+  mutate( Trial_size_grouped = case_when(
+    Trial_size < 100 ~ "a. 1-99 patients", 
+    Trial_size >= 100 & Trial_size < 200 ~ "b. 100-199 patients", 
+    Trial_size >= 200 & Trial_size < 300 ~ "c. 200-299 patients",
+    Trial_size >= 300 & Trial_size < 500 ~ "d. 300-499 patients",
+    Trial_size >= 500 & Trial_size < 1000 ~ "e. 500-999 patients",
+    Trial_size >= 1000 & Trial_size < 2000 ~ "f. 1000-1999 patients",
+    Trial_size >= 2000  ~ "g. Over 2000 patients"
+  ), .after = Trial_size)
+
+# Add a column for non-hispanic 
+fda_approvals <- fda_approvals %>% mutate(Non_Hispanic = 100 - Hispanic, .after = Hispanic)
+
+# Create longer version, for plotting
+fda_approvals_long <- pivot_longer(fda_approvals, cols = Women:Age_80_or_older, names_to = "Demographic", values_to = "Percentage")
+
+fda_approvals_long <- fda_approvals_long %>% pivot_longer(cols = Sex_comparison:Age_comparison, names_to = "Comparison", values_to = "Compared")
+
+# Change class type of variable in long
+fda_approvals_long$Percentage <- as.numeric(as.character(fda_approvals_long$Percentage))
+
+```
+
+
+```{r}
+# Missing data
+no_approvals <- fda_approvals %>% 
+  group_by(Approval_Year) %>% 
+  summarize(Approvals = n()) 
+
+reported_values <- fda_approvals_long %>% 
+  filter(Percentage != "NA") %>% 
+  filter(Demographic == "White" | Demographic == "Black" | Demographic == "Asian" | Demographic == "Hispanic") %>% 
+  group_by(Approval_Year, Demographic) %>% 
+  summarize(Non_NR = n() / 3) %>% 
+  pivot_wider(names_from = Demographic, values_from = Non_NR, values_fill = 0)
+
+missing_data <- data.frame(no_approvals$Approval_Year, 
+                           no_approvals$Approvals, 
+                           reported_values$Asian,
+                           reported_values$Black,
+                           reported_values$White,
+                           reported_values$Hispanic)
+
+names(missing_data) <- c("Approval_Year", "Approvals", "Asian", "Black", "White", "Hispanic")
+
+missing_data <- missing_data %>% 
+  mutate(Asian = round(100 * Asian / Approvals, 0),
+         Black = round(100 * Black / Approvals, 0),
+         White = round(100 * White / Approvals, 0),
+         Hispanic = round(100 * Hispanic / Approvals, 0))
+
+```
+
+```{r}
+
+```
+
+
+
+# 0) Demonstrate data comparability with [2015-2019 FDA Drug Trials Snapshots Summary Report](https://www.fda.gov/media/143592/download)
+
+**Total number of trial participants (Global)**
+
+*Page 4 in FDA Summary*
+```{r}
+
+total_patients <- sum(fda_approvals$Trial_size)
+
+print(paste("The total number of trial participants in our dataset is:", total_patients))
+print(paste("The total number of trial participants in FDA report is: 292537"))
+print(paste("Our dataset has", 292537- sum(fda_approvals$Trial_size), "fewer participants, which is within", 
+  round(100*((292537- sum(fda_approvals$Trial_size))/292537), 1), "percent of the FDA total"))
+
+```
+
+**Race distributions of trial participants (Global)**
+
+*Page 9 in FDA Summary*
+```{r, include = FALSE}
+
+# Find number of participants by race for each approval  
+global_black_participation <- fda_approvals %>% 
+  select(Brand_Name, Trial_size, Black) %>% 
+  filter(Black != "NA") %>% 
+  mutate(Black_participants = (Black/100) * Trial_size)
+
+global_white_participation <- fda_approvals %>% 
+  select(Brand_Name, Trial_size, White) %>% 
+  filter(White != "NA") %>% 
+  mutate(White_participants = (White/100) * Trial_size)
+
+global_asian_participation <- fda_approvals %>% 
+  select(Brand_Name, Trial_size, Asian) %>% 
+  filter(Asian != "NA") %>% 
+  mutate(Asian_participants = (Asian/100) * Trial_size)
+
+demographic_participation <- c(round(sum(100 * global_asian_participation$Asian_participants) /
+                                       sum(global_asian_participation$Trial_size), 0), 
+                               round(sum(100 * global_black_participation$Black_participants) / 
+                                       sum(global_black_participation$Trial_size), 0),
+                               round(sum(100 * global_white_participation$White_participants) / 
+                                       sum(global_white_participation$Trial_size), 0))
+
+fda_snapshots <- c(11, 7, 76)
+races <- c("Asian", "Black or African American", "White")
+  
+Race_distribution_comparison <- data.frame(races, fda_snapshots, demographic_participation)
+names(Race_distribution_comparison) <- c("Race", "FDA_Snapshots", "Our_Database")
+
+Race_distribution_comparison_graph <- Race_distribution_comparison %>% 
+  pivot_longer(cols = FDA_Snapshots:Our_Database, names_to = "Database", values_to = "Participation") %>% 
+  ggplot(aes(Race, Participation, fill = Database)) +
+  geom_bar(stat = "identity", position = 'dodge') +
+  geom_text(aes(label=Participation), position = position_dodge(0.9), vjust=-0.3, size=3) +
+  xlab("Race") +
+  ylab("Participation") + 
+  #theme(text = element_text(size=15)) +
+  ggtitle("Race distribution of trial participants")
+
+```
+
+```{r}
+Race_distribution_comparison_graph
+```
+
+
+```{r, fig.width = 5}
+# Find number of participants by hispanic ethnicity for each approval  
+
+global_hispanic_participation <- fda_approvals %>% 
+  select(Brand_Name, Trial_size, Hispanic) %>% 
+  filter(Hispanic != "NA") %>% 
+  mutate(Hispanic_participants = (Hispanic/100) * Trial_size)
+
+hispanic_participation_rate <- round(sum(100 * global_hispanic_participation$Hispanic_participants) /
+                                       sum(global_hispanic_participation$Trial_size), 0)
+
+hispanic_participation_rate
+
+# Plot actual vs. expected participation
+
+calculated_demographic_participation <- c(round(sum(100 * global_asian_participation$Asian_participants) /
+                                       sum(global_asian_participation$Trial_size), 1), 
+                               round(sum(100 * global_black_participation$Black_participants) / 
+                                       sum(global_black_participation$Trial_size), 1),
+                               round(sum(100 * global_white_participation$White_participants) / 
+                                       sum(global_white_participation$Trial_size), 2), 
+                               round(sum(100 * global_hispanic_participation$Hispanic_participants) /
+                                       sum(global_hispanic_participation$Trial_size), 1))
+
+expected_participation <- c(6.8, 14.3, 76.5, 18.5)
+demographics <- c("Asian", "Black or African American", "White", "Hispanic")
+  
+actual_vs_expected_participation <- data.frame(demographics, expected_participation,
+                                               calculated_demographic_participation)
+
+names(actual_vs_expected_participation) <- c("Demographic", "Expected", "Actual")
+
+actual_vs_expected_participation
+
+fda_approvals$Trial_size <- as.numeric(as.character(fda_approvals$Trial_size))
+
+actual_vs_expected_participation %>% 
+  pivot_longer(cols = Expected:Actual, names_to = "Label", values_to = "Participation") %>% 
+  ggplot(aes(Demographic, Participation, fill = Label)) +
+  #geom_point() +
+  geom_bar(stat = "identity", position = 'dodge') +
+  geom_text(aes(label=Participation), position = position_dodge(0.9), vjust = -0.4, size=4) +
+  theme(legend.position = "top", legend.title = element_blank()) +
+  xlab("Demographic") +
+  ylab("Average participation") + 
+  #theme(text = element_text(size=15)) +
+  ggtitle("Average trial participation by race, ethnicity (2015-19)")
+
+```
+
+
+**Clinical Trial Participation by Therapeutic Area**
+
+*Page 30 in FDA Summary*
+
+```{r, include=FALSE}
+
+fda_approvals_check <- fda_approvals %>% 
+  select(Therapeutic_Area, Trial_size) %>% 
+  mutate(Therapeutic_Area = case_when(
+    Therapeutic_Area == "Oncology" ~ "Oncology and Hematology", 
+    Therapeutic_Area == "Hematology" ~ "Oncology and Hematology",
+    Therapeutic_Area == "Hematology (Sickle cell)" ~ "Oncology and Hematology",
+    Therapeutic_Area == "Endocrinology and Metabolism" ~ "Endocrinology and Metabolism",
+    Therapeutic_Area == "Infectious Diseases" ~ "Infectious Diseases",
+    Therapeutic_Area == "Neurology" ~ "Neurology",
+    Therapeutic_Area == "Gynecology" ~ "Gynecology",
+    Therapeutic_Area == "Dermatology" ~ "Dermatology",
+    Therapeutic_Area == "Pulmonology and Rheumatology" ~ "Pulmonology and Rheumatology",
+    Therapeutic_Area == "Gastroenterology" ~ "Gastroenterology",
+    Therapeutic_Area == "Psychiatry" ~ "Psychiatry",
+    Therapeutic_Area == "Sleep Disorders" ~ "Psychiatry",
+    Therapeutic_Area == "Ophthalmology" ~ "Ophthalmology",
+    Therapeutic_Area == "Anesthesia and Analgesia" ~ "Anesthesia and Analgesia",
+    Therapeutic_Area == "Medical Imaging" ~ "Medical Imaging",
+    Therapeutic_Area == "Cardiovascular Diseases" ~ "Cardiovascular Diseases"
+  )) %>% 
+  group_by(Therapeutic_Area) %>% 
+  summarize(Our_database = sum(Trial_size)) %>% 
+  arrange(desc(Our_database))
+
+# Cardio, Onc, Endocrin, ID, Neurology, Derm, Gyn, Pulm/Rheum, GI, Psychiatry, Anaesthesia, Ophthal, Medical Imaging
+fda_snapshots <- c(59000, 35000, 41000, 32500, 26000, 20500, 21000, 20000, 15000, 10500, 6500, 4500, 1500)
+
+Total_patients_check <- data.frame(fda_approvals_check$Therapeutic_Area, 
+                                      fda_approvals_check$Our_database, 
+                                      fda_snapshots)
+names(Total_patients_check) <- c("Therapeutic_Area", "Our_Database", 
+                                    "FDA_Snapshots")
+
+fda_approvals_check_long <- pivot_longer(Total_patients_check, cols = Our_Database:FDA_Snapshots, 
+                                         names_to = "Database", values_to = "Participants")
+
+Patient_participation_graph <- fda_approvals_check_long %>% 
+  ggplot(aes(reorder(Therapeutic_Area, Participants), Participants, fill=Database)) +
+  geom_bar(stat = "identity", position = 'dodge') +
+  geom_text(aes(label=Participants), position = position_dodge(0.9), hjust=-0.15, size=5) +
+  coord_flip() + 
+  xlab("Therapeutic Area") +
+  ylab("Number of Participants") + 
+  theme(text = element_text(size=20)) +
+  ggtitle("Patient participation by Therapeutic Area [FDA approvals 2015-19]")
+
+```
+
+```{r, fig.height = 10, fig.width = 20}
+Patient_participation_graph
+```
+
+# 1) Summary Descriptive Statistics
+
+**a) Number of Approvals by Year**
+```{r, include = FALSE}
+approvals_table_year <- fda_approvals %>% 
+  group_by(Approval_Year) %>% 
+  summarise(Number_of_approvals = n())
+```
+
+```{r}
+approvals_table_year
+```
+
+**b) Approvals and Patient Participation by Therapeutic Area**
+```{r, include = FALSE}
+
+approvals_table_TA <- fda_approvals %>% 
+  select(Therapeutic_Area, Trial_size) %>% 
+  filter(Trial_size != "NA") %>% 
+  group_by(Therapeutic_Area) %>% 
+  summarise(Total_patients = sum(Trial_size), Number_of_approvals = n()) %>% 
+  mutate(Avg_patients_per_approval = Total_patients/Number_of_approvals) %>% 
+  mutate(Avg_patients_per_approval = round(Avg_patients_per_approval, 0)) %>% 
+  arrange(desc(Total_patients))
+
+```
+
+```{r, fig.height = 5, fig.width = 15}
+approvals_table_TA
+```
+
+
+```{r, include = FALSE}
+# Plot trial size by Therapeutic Area
+
+approvals_box <- fda_approvals %>% 
+  select(Therapeutic_Area, Trial_size) %>% 
+  filter(Trial_size != "NA") %>% 
+  mutate(Therapeutic_Area = fct_reorder(Therapeutic_Area, Trial_size, .fun='median')) %>%
+  ggplot(aes(Therapeutic_Area, Trial_size)) +
+  geom_boxplot() +
+  theme(axis.text.x = element_text(angle=90)) +
+  theme(text = element_text(size=12)) +
+  coord_flip() +
+  xlab("Therapeutic Area") +
+  ylab("Participants") +
+  ggtitle("Participants per approval")
+
+approvals_box_jitter <- fda_approvals %>% 
+  select(Therapeutic_Area, Trial_size) %>% 
+  filter(Trial_size != "NA") %>% 
+  mutate(Therapeutic_Area = fct_reorder(Therapeutic_Area, Trial_size, .fun='median')) %>%
+  ggplot(aes(Therapeutic_Area, Trial_size)) +
+  geom_boxplot() +
+  geom_jitter() +
+  theme(axis.text.x = element_text(angle=90)) +
+  theme(text = element_text(size=12)) +
+  coord_flip() +
+  xlab("Therapeutic Area") +
+  ylab("Participants") +
+  ggtitle("Participants per approval")
+
+```
+
+```{r, fig.height = 5, fig.width = 15}
+
+approvals_box
+approvals_box_jitter
+
+```
+
+
+**c) Median representation of race and ethnicity by trial size**
+
+*For comparison, Getz et. al. (2020) uses an expected distribution of race/ethnicity in the U.S. population*
+
+- Asian: 3.5%
+
+- Black: 15.6%
+
+- Hispanic: 8.2%
+
+- White: 67.1%
+
+
+```{r, include = FALSE}
+# Create a helper function to summarize median demographic
+
+median_demographics <- function(fda_approvals){
+  
+  Asian <- fda_approvals %>% 
+    select(Brand_Name, Trial_size_grouped, Asian, United_States) %>% 
+    group_by(Trial_size_grouped) %>% 
+    filter(Asian != "NA") %>% # Filter out "not reported"
+    filter(Trial_size_grouped != "NA") %>% # Filter out "Unknown" trial size
+    #filter(United_States >= US_proportion) %>% 
+    summarise(Median_Asian = median(Asian), Number_of_trials = n()) %>% 
+    arrange(Trial_size_grouped)
+  
+  Black <- fda_approvals %>% 
+    select(Brand_Name, Trial_size_grouped, Black, United_States) %>% 
+    group_by(Trial_size_grouped) %>% 
+    filter(Black != "NA") %>%
+    filter(Trial_size_grouped != "NA") %>%
+    #filter(United_States >= US_proportion) %>% 
+    summarise(Median_Black = median(Black), Number_of_trials = n()) %>% 
+    arrange(Trial_size_grouped)
+  
+  Hispanic <- fda_approvals %>% 
+    select(Brand_Name, Trial_size_grouped, Hispanic, United_States) %>% 
+    group_by(Trial_size_grouped) %>% 
+    filter(Hispanic != "NA") %>%
+    filter(Trial_size_grouped != "NA") %>%
+    #filter(United_States >= US_proportion) %>% 
+    summarise(Median_Hispanic = median(Hispanic), Number_of_trials = n()) %>% 
+    arrange(Trial_size_grouped)
+    
+  White <- fda_approvals %>% 
+    select(Brand_Name, Trial_size_grouped, White, United_States) %>% 
+    group_by(Trial_size_grouped) %>% 
+    filter(White != "NA") %>%
+    filter(Trial_size_grouped != "NA") %>%
+    #filter(United_States >= US_proportion) %>% 
+    summarise(Median_White = median(White), Number_of_trials = n()) %>% 
+    arrange(Trial_size_grouped)
+  
+  No_trials <- fda_approvals %>% 
+    group_by(Trial_size_grouped) %>% 
+    filter(Trial_size_grouped != "NA") %>%
+    #filter(United_States >= US_proportion) %>% 
+    summarise(Number_of_trials = n())
+  
+  Race_size_description <- data.frame(No_trials$Trial_size_grouped, 
+                                      No_trials$Number_of_trials, 
+                                      Asian$Median_Asian, 
+                                      Black$Median_Black, 
+                                      Hispanic$Median_Hispanic, 
+                                      White$Median_White
+                                      )
+  names(Race_size_description) <- c("Trial size", "Number of trials", 
+                                    "Median Asian", "Median Black", "Median Hispanic", 
+                                    "Median White")
+    
+  return(Race_size_description)
+}
+```
+
+
+**All Clinical Trials**
+
+```{r}
+
+Race_size_description <- median_demographics(fda_approvals)
+kable(Race_size_description, format = "html")
+
+```
+
+**Clinical Trials with >= 50% U.S. representation**
+
+```{r}
+
+fda_approvals_us_prop <- fda_approvals %>% filter(United_States >= 50)
+
+Race_size_description_US_majority <- median_demographics(fda_approvals_us_prop)
+kable(Race_size_description_US_majority, format = "html")
+
+```
+
+```{r, fig.height = 5, fig.width = 15}
+
+test <- Race_size_description %>% 
+  pivot_longer(cols = `Median Asian`:`Median White`, names_to = "Demographic", values_to = "Percentage")
+
+test %>% 
+  filter(Demographic != "Median White") %>%
+  ggplot(aes(`Trial size`, y=Percentage, group=Demographic)) +
+  geom_line()
+  #geom_bar(stat = "identity", position = 'dodge')
+  
+```
+
+
+**d) Cumulative distribution by demographic**
+
+```{r, fig.height = 5, fig.width = 10}
+# Race
+fda_approvals_long %>% 
+  filter(Demographic == "White" | Demographic == "Black" | Demographic == "Asian" | Demographic == "Hispanic") %>% 
+  ggplot(aes(Percentage/100, colour = Demographic)) + stat_ecdf(geom = "step") +
+  #facet_wrap(~Demographic, ncol=3) + 
+  scale_x_continuous(breaks = round(seq(min(0), max(1), by = 0.05),1)) +
+  scale_y_continuous(breaks = round(seq(min(0), max(1), by = 0.1),1)) +
+  theme(axis.title.x = element_text(size=15), 
+        axis.title.y = element_text(size=15),
+        axis.text.x = element_text(size=15),
+        axis.text.y = element_text(size=15),
+        title = element_text(size=15),
+        legend.text=element_text(size=20), 
+        legend.position = "top", 
+        legend.title = element_blank()
+        ) +
+  ylab("Cumulative percentage of FDA approvals") +
+  xlab("Relative participation in clinical trials") +
+  ggtitle("Cumulative distribution of race and ethnicity participation in trials (2015-19)")
+
+
+```
+
+```{r}
+# Ethnicity
+fda_approvals %>% 
+  ggplot(aes(Hispanic)) + stat_ecdf(geom = "step") +
+  scale_x_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
+  scale_y_continuous(breaks = round(seq(min(0), max(1), by = 0.1),1)) +
+  theme(text = element_text(size=10)) +
+  ggtitle("Cumulative distribution of ethnicity clinical trial participation in FDA approvals [2015-19]")
+
+```
+
+**e) Median representation by Race/TA**
+
+
+```{r}
+
+# TABLECHECK -- Median representation by race and TA
+Black_TA_view <- fda_approvals %>% 
+  group_by(Therapeutic_Area, Disease) %>% 
+  filter(Black != "NA") %>% 
+  summarize(Median_Black = median(Black), Number_of_Approvals = n()) %>% 
+  arrange(Therapeutic_Area)
+
+Asian_TA_view <- fda_approvals %>% 
+  group_by(Therapeutic_Area, Disease) %>% 
+  filter(Asian != "NA") %>% 
+  summarize(Median_Asian = median(Asian), Number_of_Approvals = n()) %>% 
+  arrange(Therapeutic_Area)
+
+Hispanic_TA_view <- fda_approvals %>% 
+  group_by(Therapeutic_Area, Disease) %>% 
+  filter(Hispanic != "NA") %>% 
+  summarize(Median_Hispanic = median(Hispanic), Number_of_Approvals = n()) %>% 
+  arrange(Therapeutic_Area)
+
+White_TA_view <- fda_approvals %>% 
+  group_by(Therapeutic_Area, Disease) %>% 
+  filter(White != "NA") %>% 
+  summarize(Median_White = median(White), Number_of_Approvals = n()) %>% 
+  arrange(Therapeutic_Area)
+
+#Other_TA_view <- fda_approvals %>% 
+#  group_by(Therapeutic_Area, Disease) %>% 
+#  filter(Other != "NA") %>% 
+#  summarize(Median_Other = median(Other), Number_of_Approvals = n()) %>% 
+#  arrange(Therapeutic_Area)
+
+All_approvals <- fda_approvals %>% 
+  group_by(Therapeutic_Area, Disease) %>% 
+  summarise(Number_of_approvals = n()) %>% 
+  arrange(Therapeutic_Area)
+
+Race_TA_table <- data.frame(All_approvals$Therapeutic_Area,
+                            All_approvals$Number_of_approvals,
+                            Asian_TA_view$Median_Asian,
+                            Black_TA_view$Median_Black,
+                            White_TA_view$Median_White)
+
+names(Race_TA_table) <- c("Therapeutic Area", "Number of approvals", "Asian", "Black", "White")
+
+Race_TA_table
+
+```
+
+
+```{r}
+
+# Count of trials by size
+
+t <- fda_approvals_long %>% 
+  filter(Demographic == "Black" | Demographic == "White" | Demographic == "Asian") %>% 
+  group_by(Demographic, Percentage) %>% 
+  summarize(Count = n()/3, Relative = round(Count/235, 2)) %>% 
+  mutate(Participation = case_when(
+    Percentage == 0 ~ "a. Zero", 
+    Percentage == 1 ~ "b. One", 
+    Percentage == 2 ~ "c. Two", 
+    Percentage == 3 ~ "d. Three",
+    Percentage == 4 ~ "e. Four", 
+    Percentage == 5 ~ "f. Five",
+    Percentage >= 6 & Percentage <= 10 ~ "g. 6-10",
+    Percentage >= 11 & Percentage <= 15 ~ "h. 11-15",
+    Percentage >= 16 & Percentage <= 20 ~ "i. 16-20",
+    Percentage >= 20 & Percentage <= 70 ~ "j. 20-70",
+    Percentage > 70 ~ "k. >70"
+    )) %>% 
+  group_by(Demographic, Participation) %>% 
+  summarize(Count = sum(Count), Relative = sum(Relative))
+
+t %>% filter(Participation != 0) %>% 
+  filter(Participation != "j. 20-70") %>% 
+  filter(Participation != "k. >70") %>% 
+  ggplot(aes(Participation, y=Count, width=1, fill=Demographic)) +
+  #geom_col(stat = "identity")
+  geom_bar(stat = "identity", position = 'dodge') + 
+  geom_text(aes(label=Count), position = position_dodge(0.9), vjust=-0.3, size=4) +
+  xlab("Percent participation in trials for FDA approval") +
+  ylab("Number of FDA approvals") +
+  ggtitle("Number of FDA approvals that had <20% participation in trials by race")
+  #facet_wrap(~Demographic)
+
+t2 <- t %>% select(-Relative) %>% pivot_wider(names_from = Demographic, values_from = Count)
+
+t2
+
+#Patient_participation_graph <- fda_approvals_check_long %>% 
+#  ggplot(aes(reorder(Therapeutic_Area, Participants), Participants, fill=Database)) +
+#  geom_bar(stat = "identity", position = 'dodge') +
+#  geom_text(aes(label=Participants), position = position_dodge(0.9), hjust=-0.15, size=5) +
+#  coord_flip() + 
+#  xlab("Therapeutic Area") +
+#  ylab("Number of Participants") + 
+#  theme(text = element_text(size=20)) +
+#  ggtitle("Patient participation by Therapeutic Area [FDA approvals 2015-19]")
+
+```
+
+```{r, fig.width = 5}
+trend <- read.csv('Trend.csv')
+
+trend_long <- trend %>% pivot_longer(cols = Black:Hispanic, names_to = "Demographic", values_to = "Participation")
+
+trend_long %>% 
+  filter(Demographic != "Other") %>% 
+  #filter(Demographic == "White" | Demographic == "Asian" | Demographic == "Black" ) %>% 
+  ggplot(aes(Year, y=Participation, colour = Demographic)) + 
+  geom_line() +
+  geom_text(aes(label=Participation), vjust = -0.4, size=3) + 
+  theme(legend.position = "top", legend.title = element_blank()) +
+  ggtitle("Average trial participation over time by race, ethnicity")
+  #geom_col() +
+  #geom_bar(stat = "identity", position = 'dodge')
+
+```
+
+
+# 2) Race, Ethnicity, Size, Geography through individual drug approvals
+
+```{r, include = FALSE}
+# Race participation 
+race_participation_graph <- fda_approvals_long %>% 
+  select(Brand_Name, Demographic, Percentage, Approval_Year) %>% 
+  filter(Demographic == "White" | Demographic == "Black" | Demographic == "Asian" | Demographic == "Other") %>%
+  filter(Percentage > -1) %>% 
+  unique() %>% 
+  ggplot(aes(Demographic, Percentage)) + 
+  geom_jitter(width = 0.2, aes(colour=Demographic)) + 
+  scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
+  ggtitle("a.i Race participation in clinical trials for FDA approvals [2015-19]")
+
+race_participation_trend_graph <- fda_approvals_long %>% 
+  select(Brand_Name, Demographic, Percentage, Approval_Year) %>% 
+  filter(Demographic == "White" | Demographic == "Black" | Demographic == "Asian" | Demographic == "Other") %>%
+  filter(Percentage > -1) %>% 
+  unique() %>% 
+  ggplot(aes(Demographic, Percentage)) + 
+  geom_jitter(width = 0.2, aes(colour=Approval_Year)) + 
+  scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
+  ggtitle("a.ii Race participation by Year in clinical trials for FDA approvals [2015-19]")
+
+# Ethnicity participation 
+
+ethnicity_participation_graph <- fda_approvals_long %>% 
+  select(Brand_Name, Demographic, Percentage, Approval_Year) %>% 
+  filter(Demographic == "Hispanic" | Demographic == "Non_Hispanic") %>%
+  filter(Percentage > -1) %>% 
+  unique() %>% 
+  ggplot(aes(Demographic, Percentage)) + 
+  geom_jitter(width = 0.2, aes(colour=Demographic)) + 
+  scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
+  ggtitle("b.i Ethnicity participation in clinical trials for FDA approvals [2017-19]")
+
+ethnicity_participation_trend_graph <- fda_approvals_long %>% 
+  select(Brand_Name, Demographic, Percentage, Approval_Year) %>% 
+  filter(Demographic == "Hispanic" | Demographic == "Non_Hispanic") %>%
+  filter(Percentage > -1) %>% 
+  unique() %>% 
+  ggplot(aes(Demographic, Percentage)) + 
+  geom_jitter(width = 0.2, aes(colour=Approval_Year)) + 
+  scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
+  ggtitle("b.ii Ethnicity participation by Year in clinical trials for FDA approvals [2017-19]")
+
+```
+
+```{r, fig.width = 5}
+race_participation_graph
+race_participation_trend_graph
+ethnicity_participation_graph
+ethnicity_participation_trend_graph
+```
+
+```{r, include = FALSE}
+# Race and US participation (all years)
+race_geography_graph <- fda_approvals_long %>% 
+  select(Brand_Name, Demographic, Percentage, United_States, Therapeutic_Area) %>% 
+  filter(Demographic == "White" | Demographic == "Black" | Demographic == "Asian" | Demographic == "Hispanic") %>%
+  filter(Percentage != "NA") %>% 
+  filter(United_States != "NA") %>% 
+  unique() %>% 
+  ggplot(aes(United_States, Percentage)) + 
+  geom_jitter(width = 0.2) + 
+  facet_wrap(~Demographic, ncol = 4) + 
+  xlab("US representation") +
+  ylab("Demographic representation") +
+  ggtitle("Race/Ethnicity and Geography in FDA approvals (2015-19)")
+
+```
+
+```{r, fig.height = 5, fig.width = 12}
+race_geography_graph
+```
+
+```{r}
+fda_approvals_long %>% 
+  select(Brand_Name, Approval_Year, Demographic, Percentage, United_States, Therapeutic_Area) %>% 
+  filter(Demographic == "White" | Demographic == "Black" | Demographic == "Asian" | Demographic == "Hispanic") %>%
+  #filter(Percentage != "NA") %>% 
+  #filter(United_States != "NA") %>% 
+  unique() %>% 
+  ggplot(aes(Approval_Year, Percentage)) + 
+  geom_jitter(width = 0.2) + 
+  facet_wrap(~Demographic, ncol = 2) + 
+  xlab("Approval Year") +
+  ylab("Demographic representation") +
+  ggtitle("Race/Ethnicity and Geography in FDA approvals (2015-19)")
+```
+
+
+```{r, include = FALSE}
+# Ethnicity and US participation (2017-19 only)
+ethnicity_geography_graph <- fda_approvals_long %>% 
+  select(Brand_Name, Demographic, Percentage, United_States, Therapeutic_Area) %>% 
+  #filter(Demographic == "Hispanic" | Demographic == "Non_Hispanic") %>%
+  filter(Demographic == "Hispanic") %>%
+  filter(Percentage != "NA") %>% 
+  filter(United_States != "NA") %>% 
+  unique() %>% 
+  ggplot(aes(United_States, Percentage)) + 
+  geom_jitter(width = 0.2) + 
+  facet_wrap(~Demographic) + 
+  xlab("US representation") +
+  ylab("Ethnicity representation") +
+  ggtitle("d. Ethnicity, geography in FDA approvals (2017-19)")
+
+```
+
+
+```{r, fig.height = 5, fig.width = 3}
+ethnicity_geography_graph
+```
+
+```{r, include = FALSE}
+# Race participation and Trial size (2015-19)
+race_size_graph <- fda_approvals_long %>% 
+  select(Brand_Name, Demographic, Percentage, Therapeutic_Area, Trial_size, United_States) %>% 
+  filter(Demographic == "White" | Demographic == "Black" | Demographic == "Asian") %>%
+  filter(Percentage != "NA") %>% 
+  unique() %>% 
+  ggplot(aes(Trial_size, Percentage)) + 
+  geom_jitter(width = 0.2) +
+  facet_wrap(~Demographic, ncol = 4) + 
+  xlim(0, 3500) +
+  #ylim(0, 25) +
+  xlab("Number of clinical trial participants") +
+  ylab("Race representation") +
+  ggtitle("e. Race representation and number of clinical trial participants in FDA approvals [2015-19]")
+
+```
+
+```{r, fig.height = 5, fig.width = 10}
+race_size_graph
+```
+
+```{r, include = FALSE}
+# Ethnicity participation and Trial size (2015-19)
+ethnicity_size_graph <- fda_approvals_long %>% 
+  select(Brand_Name, Demographic, Percentage, Therapeutic_Area, Trial_size, United_States) %>% 
+  filter(Demographic == "Hispanic" | Demographic == "Non_Hispanic") %>%
+  filter(Percentage != "NA") %>% 
+  unique() %>% 
+  ggplot(aes(Trial_size, Percentage)) + 
+  geom_jitter(width = 0.2) +
+  facet_wrap(~Demographic) + 
+  xlim(0, 3500) +
+  #ylim(0, 25) +
+  xlab("Number of clinical trial participants") +
+  ylab("Ethnicity representation") +
+  ggtitle("f. Ethnicity representation and number of clinical trial participants in FDA approvals [2017-19]")
+
+```
+
+```{r, fig.height = 5, fig.width = 10}
+ethnicity_size_graph
+```
+
+# 3) Therapeutic Area deep-dive: Race and Ethnicity representation individual drug approvals
+
+```{r, fig.height = 6, fig.width = 10}
+# For White Paper
+
+# Demographic TA graph. Race/Ethnicity together
+TA_demo_graph <- fda_approvals_long %>% 
+  select(Brand_Name, Demographic, Percentage, Therapeutic_Area, Approval_Year) %>% 
+  filter(Demographic == "White" | Demographic == "Black" | Demographic == "Asian" | Demographic == "Hispanic") %>%
+  filter(Percentage > -1) %>% 
+  unique() %>% 
+  ggplot(aes(Demographic, Percentage)) + 
+  geom_jitter(width = 0.2, aes(colour=Demographic)) + 
+  scale_y_continuous(breaks = round(seq(min(0), max(100), by = 10),1)) +
+  facet_wrap(~Therapeutic_Area, ncol = 5) + 
+  theme(legend.position = "top", legend.title = element_blank()) +
+  ggtitle("Race/Ethnicity participation by Therapeutic Area in clinical trials for FDA approvals [2015-19]")
+
+TA_demo_graph
+
+```
+
+
+```{r, fig.height = 8, fig.width = 10}
+# Oncology deep dive
+fda_approvals_long %>% 
+  filter(Therapeutic_Area == "Oncology") %>% 
+  select(Brand_Name, Demographic, Percentage, Therapeutic_Area, Disease, Approval_Year) %>% 
+  filter(Demographic == "White" | Demographic == "Black" | Demographic == "Asian" | Demographic == "Hispanic") %>%
+  filter(Percentage > -1) %>% 
+  unique() %>% 
+  ggplot(aes(Demographic, Percentage)) + 
+  geom_jitter(width = 0.2, aes(colour=Demographic)) + 
+  scale_y_continuous(breaks = round(seq(min(0), max(100), by = 10),1)) +
+  facet_wrap(~Disease) + 
+  theme(legend.position = "top", legend.title = element_blank()) +
+  ggtitle("Diversity in Oncology FDA approvals [2015-19]")
+```
+
+```{r, fig.height = 5, fig.width = 10}
+
+# Infectious Disease deep dive
+fda_approvals_long %>% 
+  filter(Therapeutic_Area == "Infectious Diseases") %>% 
+  select(Brand_Name, Demographic, Percentage, Therapeutic_Area, Disease, Approval_Year) %>% 
+  filter(Demographic == "White" | Demographic == "Black" | Demographic == "Asian" | Demographic == "Hispanic") %>%
+  filter(Percentage > -1) %>% 
+  unique() %>% 
+  ggplot(aes(Demographic, Percentage)) + 
+  geom_jitter(width = 0.2, aes(colour=Demographic)) + 
+  scale_y_continuous(breaks = round(seq(min(0), max(100), by = 10),1)) +
+  facet_wrap(~Disease) + 
+  theme(legend.position = "top", legend.title = element_blank()) +
+  ggtitle("Diversity in Infectious Diseases FDA approvals [2015-19]")
+
+```
+
+```{r, fig.height = 4, fig.width = 6}
+
+# Hematology deep dive
+fda_approvals_long %>% 
+  filter(Therapeutic_Area == "Hematology") %>% 
+  select(Brand_Name, Demographic, Percentage, Therapeutic_Area, Disease, Approval_Year) %>% 
+  filter(Demographic == "White" | Demographic == "Black" | Demographic == "Asian" | Demographic == "Hispanic") %>%
+  filter(Percentage > -1) %>% 
+  unique() %>% 
+  ggplot(aes(Demographic, Percentage)) + 
+  geom_jitter(width = 0.2, aes(colour=Demographic)) + 
+  scale_y_continuous(breaks = round(seq(min(0), max(100), by = 10),1)) +
+  facet_wrap(~Disease) + 
+  theme(legend.position = "top", legend.title = element_blank()) +
+  ggtitle("Diversity in Hematology FDA approvals [2015-19]")
+
+```
+
+
+```{r, fig.height = 6, fig.width = 10}
+# Cardiovascular Diseases deep dive
+fda_approvals_long %>% 
+  filter(Therapeutic_Area == "Cardiovascular Diseases") %>% 
+  select(Brand_Name, Demographic, Percentage, Therapeutic_Area, Disease, Approval_Year) %>% 
+  filter(Demographic == "White" | Demographic == "Black" | Demographic == "Asian" | Demographic == "Hispanic") %>%
+  filter(Percentage > -1) %>% 
+  unique() %>% 
+  ggplot(aes(Demographic, Percentage)) + 
+  geom_jitter(width = 0.2, aes(colour=Demographic)) + 
+  scale_y_continuous(breaks = round(seq(min(0), max(100), by = 10),1)) +
+  facet_wrap(~Disease) + 
+  theme(legend.position = "top", legend.title = element_blank()) +
+  ggtitle("Diversity in Cardiovascular Diseases FDA approvals [2015-19]")
+```
+
+
+```{r, fig.height = 6, fig.width = 10}
+# Psychiatry Diseases deep dive
+fda_approvals_long %>% 
+  filter(Therapeutic_Area == "Psychiatry") %>% 
+  select(Brand_Name, Demographic, Percentage, Therapeutic_Area, Disease, Approval_Year) %>% 
+  filter(Demographic == "White" | Demographic == "Black" | Demographic == "Asian" | Demographic == "Hispanic") %>%
+  filter(Percentage > -1) %>% 
+  unique() %>% 
+  ggplot(aes(Demographic, Percentage)) + 
+  geom_jitter(width = 0.2, aes(colour=Demographic)) + 
+  scale_y_continuous(breaks = round(seq(min(0), max(100), by = 10),1)) +
+  facet_wrap(~Disease) + 
+  theme(legend.position = "top", legend.title = element_blank()) +
+  ggtitle("Diversity in Psychiatry Diseases FDA approvals [2015-19]")
+```
+
+
+```{r, fig.height = 4, fig.width = 8}
+
+# Endocrinology and Metabolism Diseases deep dive
+fda_approvals_long %>% 
+  filter(Therapeutic_Area == "Endocrinology and Metabolism") %>% 
+  select(Brand_Name, Demographic, Percentage, Therapeutic_Area, Disease, Approval_Year) %>% 
+  filter(Demographic == "White" | Demographic == "Black" | Demographic == "Asian" | Demographic == "Hispanic") %>%
+  filter(Percentage > -1) %>% 
+  unique() %>% 
+  ggplot(aes(Demographic, Percentage)) + 
+  geom_jitter(width = 0.2, aes(colour=Demographic)) + 
+  scale_y_continuous(breaks = round(seq(min(0), max(100), by = 10),1)) +
+  facet_wrap(~Disease) + 
+  theme(legend.position = "top", legend.title = element_blank()) +
+  ggtitle("Diversity in Endocrinology and Metabolism FDA approvals [2015-19]")
+
+
+```
+
+
+
+
+
+```{r, include = FALSE}
+
+TA_race_graph <- fda_approvals_long %>% 
+  select(Brand_Name, Demographic, Percentage, Therapeutic_Area, Approval_Year) %>% 
+  filter(Demographic == "White" | Demographic == "Black" | Demographic == "Asian" | Demographic == "Other") %>%
+  filter(Percentage > -1) %>% 
+  unique() %>% 
+  ggplot(aes(Demographic, Percentage)) + 
+  geom_jitter(width = 0.2, aes(colour=Demographic)) + 
+  facet_wrap(~Therapeutic_Area) + 
+  ggtitle("a.i Race participation by Therapeutic Area in clinical trials for FDA approvals [2015-19]")
+
+TA_race_trend_graph <- fda_approvals_long %>% 
+  select(Brand_Name, Demographic, Percentage, Therapeutic_Area, Approval_Year) %>% 
+  filter(Demographic == "White" | Demographic == "Black" | Demographic == "Asian" | Demographic == "Other") %>%
+  filter(Percentage > -1) %>% 
+  unique() %>% 
+  ggplot(aes(Demographic, Percentage)) + 
+  geom_jitter(width = 0.2, aes(colour=Approval_Year)) + 
+  facet_wrap(~Therapeutic_Area) + 
+  ggtitle("a.ii. Race participation by Therapeutic Area & Year in clinical trials for FDA approvals [2015-19]")
+
+TA_ethnicity_graph <- fda_approvals_long %>% 
+  select(Brand_Name, Demographic, Percentage, Therapeutic_Area, Approval_Year) %>% 
+  filter(Demographic == "Hispanic" | Demographic == "Non_Hispanic") %>%
+  filter(Percentage > -1) %>% 
+  unique() %>% 
+  ggplot(aes(Demographic, Percentage)) + 
+  geom_jitter(width = 0.2, aes(colour=Demographic)) + 
+  facet_wrap(~Therapeutic_Area) + 
+  ggtitle("b.i Ethnicity participation by Therapeutic Area in clinical trials for FDA approvals [2017-19]")
+
+TA_ethnicity_trend_graph <- fda_approvals_long %>% 
+  select(Brand_Name, Demographic, Percentage, Therapeutic_Area, Approval_Year) %>% 
+  filter(Demographic == "Hispanic" | Demographic == "Non_Hispanic") %>%
+  filter(Percentage > -1) %>% 
+  unique() %>% 
+  ggplot(aes(Demographic, Percentage)) + 
+  geom_jitter(width = 0.2, aes(colour=Approval_Year)) + 
+  facet_wrap(~Therapeutic_Area) + 
+  ggtitle("b.ii. Ethnicity participation by Therapeutic Area & Year in clinical trials for FDA approvals [2017-19]")
+
+```
+
+
+```{r, fig.height = 10, fig.width = 10}
+TA_race_graph
+```
+
+
+```{r, fig.height = 10, fig.width = 10}
+TA_race_trend_graph
+```
+
+
+```{r, fig.height = 10, fig.width = 10}
+TA_ethnicity_graph
+```
+
+
+```{r, fig.height = 10, fig.width = 10}
+TA_ethnicity_trend_graph
+```
+
+# 4) Ability to assess efficacy/safety differences
+
+```{r}
+
+brks <- c(0, 0.25, 0.5, 0.75, 1)
+
+Approvals_18_19 <- fda_approvals %>% 
+  filter(Approval_Year >= 2018) %>% 
+  group_by(Approval_Year) %>% 
+  summarize(Count = n())
+  
+total_18_19 <- sum(Approvals_18_19$Count)
+
+fda_approvals_long %>% 
+  filter(Compared == "yes") %>% 
+  filter(Approval_Year >= 2018) %>%
+  group_by(Comparison) %>% 
+  summarize(Count = round(100 * n() / (total_18_19*10), 0)) # Divide by 10 bc 10 variables for demographic 
+
+fda_approvals_long %>% 
+  filter(Compared == "yes") %>% 
+  filter(Approval_Year >= 2018) %>%
+  group_by(Comparison) %>% 
+  summarize(Count = round(100 * n() / (total_18_19*10), 0)) %>% # Divide by 10 bc 10 variables for demographic 
+  ggplot() + 
+  geom_col(aes(Comparison, Count)) + 
+  #geom_text(aes(label=Count), position = position_dodge(0.9), vjust=-0.3, size=3) +
+  xlab("Comparison Type") +
+  ylab("Percent of Approvals") + 
+  ggtitle("Ability to assess efficacy/safety in trial data for FDA approval (2018,19)")
+
+#fda_approvals_long %>% 
+#  filter(Approval_Year >= 2018) %>%
+#  #mutate(Perc = Count / total_18_19) %>% 
+#  ggplot() +
+#  geom_bar(aes(Comparison, fill = Compared)) + 
+#  scale_y_continuous(labels = scales::percent(brks)) + 
+#  ggtitle("Percent of studies that were able to assess efficacy/safety across Age, Race, Sex [FDA approvals 2018,19]")
+
+```
+
+
