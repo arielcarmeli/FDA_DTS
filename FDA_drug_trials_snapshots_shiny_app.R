@@ -9,7 +9,6 @@ library(bmi713neiss)
 # install.packages("scales")
 library(scales) # for problem 1.2a. Need to make sure scales is installed!
 
-#data <- neiss_2008_2018
 fda_approvals <- read.csv('FDA_Drug_Trials_Snapshots_2015-19.csv')
 
 # Change class type of select variables to aid in data processing and visualization
