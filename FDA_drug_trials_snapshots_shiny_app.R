@@ -73,20 +73,20 @@ ui <- fluidPage(
                     # SOLUTION GROUP EXERCISE
                     selectInput(
                         "race",
-                        "Race(s)",
-                        choices=str_to_title(unique(fda_approvals_long$Demographic)), 
-                        #choices=str_replace(c("Asian", "Black", "White", "Other")),
+                        "Race",
+                        #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
+                        choices= c("Asian", "Black", "White", "Other"),
                         selected = c("Asian", "Black", "White", "Other"),
                         multiple=T
                     ),
                     
                     selectInput(
-                      "ethnicity",
-                      "Ethnicity",
-                      choices=str_to_title(unique(fda_approvals_long$Demographic)), 
-                      #choices=str_replace(c("Hispanic", "Non-Hispanic")),
-                      selected = c("Hispanic", "Non-Hispanic"),
-                      multiple=T
+                        "ethnicity",
+                        "Ethnicity",
+                        #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
+                        choices= c("Hispanic", "Non_Hispanic"),
+                        selected = c("Hispanic", "Non_Hispanic"),
+                        multiple=T
                     ),
                     
                     #selectInput(
@@ -143,20 +143,20 @@ ui <- fluidPage(
                     
                     selectInput(
                         "race_TA_page",
-                        "Race(s)",
-                        choices=str_to_title(unique(fda_approvals_long$Demographic)), 
-                        #choices=str_replace(c("Asian", "Black", "White", "Other")),
+                        "Race",
+                        #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
+                        choices= c("Asian", "Black", "White", "Other"),
                         selected = c("Asian", "Black", "White", "Other"),
                         multiple=T
                     ), 
                     
                     selectInput(
-                      "ethnicity_TA_page",
-                      "Ethnicity",
-                      choices=str_to_title(unique(fda_approvals_long$Demographic)), 
-                      #choices=str_replace(c("Hispanic", "Non-Hispanic")),
-                      selected = c("Hispanic", "Non-Hispanic"),
-                      multiple=T
+                        "ethnicity_TA_page",
+                        "Ethnicity",
+                        #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
+                        choices= c("Hispanic", "Non_Hispanic"),
+                        selected = c("Hispanic", "Non_Hispanic"),
+                        multiple=T
                     ),
                    
                     selectInput(
