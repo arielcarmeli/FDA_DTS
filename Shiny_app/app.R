@@ -46,124 +46,122 @@ ui <- fluidPage(
     
     tabsetPanel( # Problem 2.1 - add tab set to the window
         tabPanel("All 2015-2019 FDA Approvals", # Problem 2.1 - add Product Details tab
-                 sidebarLayout(
-                     sidebarPanel(
-                         
-                         selectInput(
-                             "race",
-                             "Race",
-                             #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
-                             choices= c("Asian", "Black", "White", "Other"),
-                             selected = c("Asian", "Black", "White", "Other"),
-                             multiple=T
-                         ),
-                         
-                         selectInput(
-                             "ethnicity",
-                             "Ethnicity",
-                             #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
-                             choices= c("Hispanic", "Non_Hispanic"),
-                             #selected = c("Hispanic", "Non_Hispanic"),
-                             multiple=T
-                         ),
-                         
-                         sliderInput(
-                             "participation",
-                             "Filter participation by",
-                             min=0,
-                             max=100,
-                             value=c(0, 100)
-                         ),
-                         
-                         radioButtons( 
-                             "is_TA_Stratified", 
-                             "Stratify by Therapeutic Area?", 
-                             choiceNames=list( "Yes", "No" ), 
-                             choiceValues=list(TRUE,FALSE),
-                             selected=FALSE
-                         ),
-                         
-                         selectInput(
-                             "year",
-                             "Year(s)",
-                             choices=unique(fda_approvals$Approval_Year),
-                             selected = c(2015, 2016, 2017, 2018, 2019),
-                             multiple=T
-                         ),
-                         
-                         radioButtons( 
-                             "is_Year_labelled", 
-                             "Label by Year?", 
-                             choiceNames=list( "Yes", "No" ), 
-                             choiceValues=list(TRUE,FALSE),
-                             selected=FALSE
-                         )#,
-                         
-                         , width = 3
-                         
-                         #textOutput("summaryText")
+            sidebarLayout(
+                sidebarPanel(
+                     selectInput(
+                         "race",
+                         "Race",
+                         #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
+                         choices= c("Asian", "Black", "White", "Other"),
+                         selected = c("Asian", "Black", "White", "Other"),
+                         multiple=T
                      ),
                      
-                     mainPanel(
-                         
-                         h2("How consistent is diversity in FDA approvals?"),
-                         plotOutput("individualPlot"),
-                         
-                         h2("Count (Density) of trial participation"),
-                         plotOutput("participationCountPlot"),
-                         
-                         h2("Approval Details"),
-                         DT::dataTableOutput("approvalsTable"),
-                     )
+                     selectInput(
+                         "ethnicity",
+                         "Ethnicity",
+                         #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
+                         choices= c("Hispanic", "Non_Hispanic"),
+                         #selected = c("Hispanic", "Non_Hispanic"),
+                         multiple=T
+                     ),
+                     
+                     sliderInput(
+                         "participation",
+                         "Filter participation by",
+                         min=0,
+                         max=100,
+                         value=c(0, 100)
+                     ),
+                     
+                     radioButtons( 
+                         "is_TA_Stratified", 
+                         "Stratify by Therapeutic Area?", 
+                         choiceNames=list( "Yes", "No" ), 
+                         choiceValues=list(TRUE,FALSE),
+                         selected=FALSE
+                     ),
+                     
+                     selectInput(
+                         "year",
+                         "Year(s)",
+                         choices=unique(fda_approvals$Approval_Year),
+                         selected = c(2015, 2016, 2017, 2018, 2019),
+                         multiple=T
+                     ),
+                     
+                     radioButtons( 
+                         "is_Year_labelled", 
+                         "Label by Year?", 
+                         choiceNames=list( "Yes", "No" ), 
+                         choiceValues=list(TRUE,FALSE),
+                         selected=FALSE
+                     )#,
+                     
+                     , width = 3
+                     
+                     #textOutput("summaryText")
+                 ),
+                     
+                 mainPanel(
+                     
+                     h2("How consistent is diversity in FDA approvals?"),
+                     plotOutput("individualPlot"),
+                     
+                     h2("Count (Density) of trial participation"),
+                     plotOutput("participationCountPlot"),
+                     
+                     h2("Approval Details"),
+                     DT::dataTableOutput("approvalsTable"),
                  )
+             )
         ), 
         tabPanel("By Therapeutic Area & Disease",
-                 sidebarLayout(
-                     sidebarPanel(
-                         
-                         selectInput(
-                             "race_TA_page",
-                             "Race",
-                             #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
-                             choices= c("Asian", "Black", "White", "Other"),
-                             selected = c("Asian", "Black", "White", "Other"),
-                             multiple=T
-                         ), 
-                         
-                         selectInput(
-                             "ethnicity_TA_page",
-                             "Ethnicity",
-                             #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
-                             choices= c("Hispanic", "Non_Hispanic"),
-                             #selected = c("Hispanic", "Non_Hispanic"),
-                             multiple=T
-                         ),
-                         
-                         selectInput(
-                             "therapeutic_area",
-                             "Therapeutic Area",
-                             choices=sort(unique(fda_approvals$Therapeutic_Area)),
-                             selected = "Oncology",
-                             multiple=FALSE
-                         ),
-                         
-                         radioButtons( 
-                             "is_Disease_Stratified", 
-                             "Stratify by Disease?", 
-                             choiceNames=list( "Yes", "No" ), 
-                             choiceValues=list(TRUE,FALSE),
-                             selected=FALSE
-                         ),
-                         
+            sidebarLayout(
+                sidebarPanel(
+                     selectInput(
+                         "race_TA_page",
+                         "Race",
+                         #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
+                         choices= c("Asian", "Black", "White", "Other"),
+                         selected = c("Asian", "Black", "White", "Other"),
+                         multiple=T
                      ), 
-                     mainPanel(
-                         h2("How consistent is diversity in FDA approvals in ", input$therapeutic_area, "?"),
-                         plotOutput("TA_individualPlot"),
-                         
-                         h2("Approval Details"),
-                         DT::dataTableOutput("TA_approvalsTable"),
-                     )
+                     
+                     selectInput(
+                         "ethnicity_TA_page",
+                         "Ethnicity",
+                         #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
+                         choices= c("Hispanic", "Non_Hispanic"),
+                         #selected = c("Hispanic", "Non_Hispanic"),
+                         multiple=T
+                     ),
+                     
+                     selectInput(
+                         "therapeutic_area",
+                         "Therapeutic Area",
+                         choices=sort(unique(fda_approvals$Therapeutic_Area)),
+                         selected = "Oncology",
+                         multiple=FALSE
+                     ),
+                     
+                     radioButtons( 
+                         "is_Disease_Stratified", 
+                         "Stratify by Disease?", 
+                         choiceNames=list( "Yes", "No" ), 
+                         choiceValues=list(TRUE,FALSE),
+                         selected=FALSE
+                     ),
+                     
+                 ), 
+                 mainPanel(
+                     h2("How consistent is diversity in FDA approvals in selected TA?"),
+                     plotOutput("TA_individualPlot"),
+                     
+                     h2("Approval Details"),
+                     DT::dataTableOutput("TA_approvalsTable"),
                  )
+             )
         )
     )
 )

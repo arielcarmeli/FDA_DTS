@@ -5,8 +5,8 @@ account: arielcarmeli
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 3445536
-bundleId: 4061629
+bundleId: 4071051
 url: https://arielcarmeli.shinyapps.io/Shiny_app/
-when: 1609874802.96243
+when: 1610077933.59437
 asMultiple: FALSE
 asStatic: FALSE
