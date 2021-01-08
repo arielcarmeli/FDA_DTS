@@ -48,18 +48,6 @@ ui <- fluidPage(
         tabPanel("All 2015-2019 FDA Approvals", # Problem 2.1 - add Product Details tab
                  sidebarLayout(
                      sidebarPanel(
-                         #selectInput( 
-                         #    "product", 
-                         #    "Product",          
-                         #    choices=sort(unique(data$Product_1)),
-                         #    selected = " GOLF CARTS", # Problem 1.4 - Make GOLF CARTS the default. Important to have a space before "G"
-                         #    multiple=FALSE
-                         #),
-                         
-                         #textInput(
-                         #    "narrative_filter",
-                         #    "Filter Narratives By"
-                         #),
                          
                          selectInput(
                              "race",
@@ -78,12 +66,6 @@ ui <- fluidPage(
                              #selected = c("Hispanic", "Non_Hispanic"),
                              multiple=T
                          ),
-                         
-                         #selectInput(
-                         #    "label_by",
-                         #    "Label by",
-                         #    choices= c("None", "Year"),
-                         #),
                          
                          sliderInput(
                              "participation",
@@ -124,10 +106,10 @@ ui <- fluidPage(
                      
                      mainPanel(
                          
-                         h2("Participation in individual FDA approvals"),
+                         h2("How consistent is diversity in FDA approvals?"),
                          plotOutput("individualPlot"),
                          
-                         h2("Number of approvals by participation level"),
+                         h2("Count (Density) of trial participation"),
                          plotOutput("participationCountPlot"),
                          
                          h2("Approval Details"),
@@ -175,7 +157,7 @@ ui <- fluidPage(
                          
                      ), 
                      mainPanel(
-                         h2("Participation"),
+                         h2("How consistent is diversity in FDA approvals in ", input$therapeutic_area, "?"),
                          plotOutput("TA_individualPlot"),
                          
                          h2("Approval Details"),
@@ -228,11 +210,6 @@ server <- function(input, output) {
     # Change class type of variable in long
     fda_approvals_long$Percentage <- as.numeric(as.character(fda_approvals_long$Percentage))
     
-    # add columns to the tibble
-    #data <- data %>% 
-    #    mutate(Week = as.factor(week(ymd(Treatment_Date)))) %>%
-    #    mutate(Weekday = as.factor(weekdays(ymd(Treatment_Date)))) 
-    
     print( "Data processed!" )
     #print( dim(data) )
     
@@ -242,54 +219,25 @@ server <- function(input, output) {
             select(Brand_Name, Therapeutic_Area, Indication, Enrollment, Demographic, Percentage, Approval_Year, Enrollment_bucket) %>%
             filter(Percentage != "NA") %>% 
             unique()
-        #filter(Product_1 == input$product) %>%
-        #filter(stringr::str_detect(Narrative_1, toupper(input$narrative_filter)))
-        
+
         if ( !is.null( input$race ) | !is.null( input$ethnicity ) ) {
-            # Problem 1.3.1 - wrap "Body_Part" by stringr function str_to_title to match the input format
-            # Problem 1.3.2 - change "Body_Part in filter to `Body Part` to account for updated column name
-            #selection <- selection %>% filter( str_to_title(`Body Part`) %in% input$demographic )
             selection <- selection %>% filter( Demographic %in% input$race | Demographic %in% input$ethnicity )
         }
         
         if ( !is.null( input$year ) ) {
-            # Problem 1.3.1 - wrap "Body_Part" by stringr function str_to_title to match the input format
-            # Problem 1.3.2 - change "Body_Part in filter to `Body Part` to account for updated column name
-            #selection <- selection %>% filter( str_to_title(`Body Part`) %in% input$demographic )
             selection <- selection %>% filter( Approval_Year %in% input$year )
         }
         
-        # SOLUTION GROUP EXERCISE
-        #selection <- selection %>%
-        #    filter(Age >= input$age[1] ) %>%
-        #    filter(Age <= input$age[2] )
+        # Find unique set of drugs that have participation values in the bounds from input
+        drugs <- selection %>% 
+            filter(Percentage >= input$participation[1]) %>% 
+            filter(Percentage <= input$participation[2]) %>% 
+            group_by(Brand_Name) %>% 
+            unique()
         
-        # Problem 1.3.2 - update these 2 column name strings to replace "_" with a space (" ")
-        #colnames(selection)[which(names(selection) == "Age_Group")] <- "Age Group"
-        #colnames(selection)[which(names(selection) == "Body_Part")] <- "Body Part"
-        
-        # SOLUTION GROUP EXERCISE
-        # only apply body part filter if user made a selection
-        # do not filter if no body part was selected
-        #if ( !is.null( input$bodypart ) ) {
-        # Problem 1.3.1 - wrap "Body_Part" by stringr function str_to_title to match the input format
-        # Problem 1.3.2 - change "Body_Part in filter to `Body Part` to account for updated column name
-        #    selection <- selection %>% filter( str_to_title(`Body Part`) %in% input$bodypart ) 
-        #}
-        
-        # Problem 1.1 - add filter if year(s) were selected. do nothing if no year was selected
-        #if ( !is.null( input$year ) ) {
-        #    selection <- selection %>% filter( Year %in% input$year )
-        #}
-        
-        # Problem 1.2.c to order the weekdays in order. I do this by specifying the levels of the Weekday values
-        #if ( input$group_by == "Weekday" ){
-        
-        #    selection <- selection %>% mutate(Weekday = factor(Weekday, 
-        #                                             levels = c("Sunday", "Monday", "Tuesday", "Wednesday", 
-        #                                                        "Thursday", "Friday", "Saturday"),
-        #                                             ordered = TRUE))
-        #}
+        # Filter selection to include this set of drugs
+        selection <- selection %>% 
+            filter( Brand_Name %in% drugs$Brand_Name )
         
         selection
     })
@@ -302,16 +250,10 @@ server <- function(input, output) {
             filter(Percentage != "NA")
         
         if ( !is.null( input$race ) | !is.null( input$ethnicity ) ) {
-            # Problem 1.3.1 - wrap "Body_Part" by stringr function str_to_title to match the input format
-            # Problem 1.3.2 - change "Body_Part in filter to `Body Part` to account for updated column name
-            #selection <- selection %>% filter( str_to_title(`Body Part`) %in% input$demographic )
             selection <- selection %>% filter( Demographic %in% input$race | Demographic %in% input$ethnicity )
         }
         
         if ( !is.null( input$year ) ) {
-            # Problem 1.3.1 - wrap "Body_Part" by stringr function str_to_title to match the input format
-            # Problem 1.3.2 - change "Body_Part in filter to `Body Part` to account for updated column name
-            #selection <- selection %>% filter( str_to_title(`Body Part`) %in% input$demographic )
             selection <- selection %>% filter( Approval_Year %in% input$year )
         }
         
@@ -335,17 +277,7 @@ server <- function(input, output) {
             filter(Percentage != "NA") %>% 
             unique()
         
-        #if ( !is.null( input$demographic_TA_page ) ) {
-        # Problem 1.3.1 - wrap "Body_Part" by stringr function str_to_title to match the input format
-        # Problem 1.3.2 - change "Body_Part in filter to `Body Part` to account for updated column name
-        #selection <- selection %>% filter( str_to_title(`Body Part`) %in% input$demographic )
-        #  selection <- selection %>% filter( Demographic %in% input$demographic_TA_page )
-        #}
-        
         if ( !is.null( input$race_TA_page ) | !is.null( input$ethnicity_TA_page ) ) {
-            # Problem 1.3.1 - wrap "Body_Part" by stringr function str_to_title to match the input format
-            # Problem 1.3.2 - change "Body_Part in filter to `Body Part` to account for updated column name
-            #selection <- selection %>% filter( str_to_title(`Body Part`) %in% input$demographic )
             selection <- selection %>% filter( Demographic %in% input$race_TA_page | Demographic %in% input$ethnicity_TA_page )
         }
         
@@ -356,41 +288,7 @@ server <- function(input, output) {
         selection
         
     })
-    
-    # Problem 2.2.2.1 - Create reactive expression to filter on selected products and aggregate injuries by product and year
-    #injuries_prod_year <- reactive({
-    #    selection <- data %>% 
-    #        filter(Product_1 %in% input$product_comparison) %>% 
-    #        select(Product_1, Year) %>% 
-    #        group_by(Product_1, Year) %>% 
-    #        summarize(Count = n())
-    
-    # Problem 2.2.5.2 - Perform normalization if user requests
-    #    if ( input$normalize ){
-    #        selection <- selection %>% 
-    #            mutate(Count = rescale(Count, c(0,1)))
-    #    }
-    
-    #    selection
-    #})
-    
-    # Problem 2.2.2.2 - Create reactive expression to filter on selected products and aggregate injuries by product and body_part
-    #injuries_prod_bdypt <- reactive({
-    #    selection <- data %>% 
-    #        filter(Product_1 %in% input$product_comparison) %>% 
-    #        select(Product_1, Body_Part) %>% 
-    #        group_by(Product_1, Body_Part) %>% 
-    #        summarize(Count = n())
-    
-    # Problem 2.2.5.2 - Perform normalization if user requests
-    #    if ( input$normalize ){
-    #        selection <- selection %>% 
-    #            mutate(Count = rescale(Count, c(0,1)))
-    #    }
-    
-    #    selection
-    #})
-    
+
     output$individualPlot <- renderPlot({
         
         plot <- approvals() %>% 
@@ -400,7 +298,7 @@ server <- function(input, output) {
             #geom_jitter(width = 0.2, aes(colour=Demographic)) + 
             theme(legend.position = "top", legend.title = element_blank()) +
             scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
-            ggtitle("Demographic participation in clinical trials for FDA approvals")
+            ggtitle("Participation in clinical trials by demographic \n (Each dot represents % participation in one trial)")
         
         if ( input$is_TA_Stratified ) {
             plot <- plot + 
@@ -415,30 +313,6 @@ server <- function(input, output) {
             plot <- plot + geom_jitter(width = 0.2, aes(colour=Demographic))
         }
         
-        #ggplot(approvals()) +
-        #xlab( "Demographic" ) +
-        #xlab( input$group_by ) +
-        #ylab( "Cases" ) +
-        #filter(Percentage > -1) %>%
-        #theme(axis.text.x = element_text(angle=45, hjust=1)) + # Problem 1.2b - rotate x-axis labels
-        #scale_y_continuous(breaks=pretty_breaks()) # Problem 1.2a - ensure y-axis labels always integers
-        
-        #if ( input$isSexStratified ) {
-        #        plot <- plot + 
-        #            geom_bar(aes(x=.data[[input$group_by]], fill=as.factor(Sex) ), position="dodge") + 
-        #            ggtitle( paste0( "Injuries by ", input$group_by, " and sex" ) )    
-        
-        #} else {
-        #    plot <- plot + 
-        #        geom_bar(aes(x=.data[[input$group_by]] )) +
-        #        ggtitle( paste0( "Injuries by ", input$group_by ) )
-        #}
-        
-        # SOLUTION GROUP EXERCISE
-        #if ( input$isDiagnosisStratified ) {
-        #    plot <- plot + facet_wrap(as.factor(approvals()$Diagnosis))
-        #}
-        
         plot
     })#, height = 800, width = 1200)
     
@@ -450,12 +324,14 @@ server <- function(input, output) {
                 filter(Percentage >= input$participation[1]) %>% 
                 filter(Percentage <= input$participation[2]) %>% 
                 ggplot(aes(Percentage, y=Count, width=1, group = Approval_Year)) +
-                geom_line(aes(colour = Approval_Year), stat = "identity") +
+                geom_point(aes(colour = Approval_Year), stat = "identity") +
+                #geom_line(aes(colour = Approval_Year), stat = "identity") +
+                scale_x_continuous(breaks = round(seq(min(input$participation[1]), 
+                                                      max(input$participation[2]), by = 2),1)) +
                 xlab("Percent participation in trials for FDA approval") +
-                ylab("Number of FDA approvals") +
-                ggtitle("Number of FDA approvals by participation in trial") +
+                ylab("Count") +
+                ggtitle("Number of FDA approvals with given percent participation in its trials \n e.g., across 2015-2019 we see 19 and 45 FDA approved products had 0 and 1 percent Black participation in its trials") +
                 facet_wrap(~Demographic, ncol=1)
-            
         }
         else {
             # bar chart - for all years
@@ -466,10 +342,12 @@ server <- function(input, output) {
                 filter(Percentage <= input$participation[2]) %>% 
                 ggplot(aes(Percentage, y=Count, width=1)) +
                 geom_bar(stat = "identity", position = 'dodge') +
-                geom_text(aes(label=Count), position = position_dodge(0.9), vjust=-0.3, size=4) +
+                geom_text(aes(label=Count), position = position_dodge(0.9), vjust=-0.3, size=2) +
+                scale_x_continuous(breaks = round(seq(min(input$participation[1]), 
+                                                      max(input$participation[2]), by = 2),1)) +
                 xlab("Percent participation in trials for FDA approval") +
                 ylab("Number of FDA approvals") +
-                ggtitle("Number of FDA approvals by participation in trial") +
+                ggtitle("Number of FDA approvals with given percent participation in its trials \n e.g., across 2015-2019 we see 19 and 45 FDA approved products had 0 and 1 percent Black participation in its trials") +
                 facet_wrap(~Demographic, ncol=1)
         }
         
@@ -479,8 +357,9 @@ server <- function(input, output) {
     output$approvalsTable <- DT::renderDataTable(
         approvals() %>% 
             select(-Enrollment_bucket) %>% 
-            pivot_wider(names_from = Demographic, values_from = Percentage), 
-        options=list(pageLength=10)
+            #filter(Percentage >= input$participation[1]) %>% 
+            #filter(Percentage <= input$participation[2]) %>%
+            pivot_wider(names_from = Demographic, values_from = Percentage), options=list(pageLength=10)
         
     )
     
@@ -491,7 +370,8 @@ server <- function(input, output) {
             geom_jitter(width = 0.2, aes(colour=Demographic)) + 
             theme(legend.position = "top", legend.title = element_blank()) +
             scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
-            ggtitle("Demographic participation in clinical trials for FDA approvals")
+            ggtitle("Participation in clinical trials by demographic \n 
+                    Each dot represents % participation in one trial")
         
         if ( input$is_Disease_Stratified ) {
             plot <- plot + 
@@ -507,38 +387,6 @@ server <- function(input, output) {
             select(-Enrollment_bucket) %>%
             pivot_wider(names_from = Demographic, values_from = Percentage), options=list(pageLength=10)
     )
-    
-    #output$summaryText <- renderText(
-    #    paste0( "Selected: ", dim( cases() )[1], "/", dim( data )[1], " cases" )
-    #)
-    
-    # Problem 2.2.3 - Implement line chart to compare injuries by year
-    #output$injuries_by_year_plot <- renderPlot({
-    #    plot <- ggplot(injuries_prod_year()) +
-    #        geom_line(aes(x=Year, y=Count, linetype=Product_1, color=Product_1), linetype="solid", stat="identity") + 
-    #        xlab( "Year" ) +
-    #        ylab( "Cases" ) +
-    #        theme(axis.text.x = element_text(angle=45, hjust=1), 
-    #              legend.position = "bottom", legend.direction = "vertical") +
-    #        scale_x_continuous(breaks=pretty_breaks())
-    
-    #    plot
-    
-    #})
-    
-    # Problem 2.2.4 - Implement line chart to compare injuries by body part
-    #output$injuries_prod_bdypt <- renderPlot({
-    #    plot <- ggplot(injuries_prod_bdypt()) +
-    #        geom_bar(aes(x=Body_Part, y=Count, fill=Product_1), stat="identity", position="dodge") + 
-    #        xlab( "Year" ) +
-    #        ylab( "Cases" ) +
-    #        theme(axis.text.x = element_text(angle=45, hjust=1), 
-    #              legend.position = "bottom", legend.direction = "vertical")
-    
-    
-    #    plot
-    
-    #})
     
 }
 
