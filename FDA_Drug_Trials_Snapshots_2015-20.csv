@@ -234,3 +234,56 @@ DIACOMIT,Neurology,,Other Neurology,,Treatment of seizures associated with Drave
 BENZNIDAZOLE,Infectious Diseases,,Other Infectious Diseases,,Treatment of Chagas disease,2017,235,,,,,46,,,,,,0,,,0,Yes
 NETSPOT,Oncology,,Other oncology,,For detection of a specific type of tumors called somatostatin receptor positive neuro-endocrine tumors (NETs) ,2016,265,,,,,52,,,,,100,,,,,No. Dr. Bierer reviewed TA label
 COTELLIC,Oncology,,Melanoma/skin cancer,,Part of combination treatment melanoma ,2015,495,,,,,42,93,,,,7,27,9,3,,Yes
+ARTESUNATE,Infectious Disease,,,,Treatment of malaria,2020,,,,,,26,NR,NR,NR,NR,,3,,,0,Yes
+AYVAKIT,Oncology,,,,Treatment of gastrointestinal stromal tumors,2020,,,,,,39,72,4,10,3,,40,,,45,Yes
+BARHEMSYS,Anesthesia and Analgesia,,,,Treatment of post-operative nausea and vomiting,2020,,,,,,88,79,9,1,10,,14,,,63,No. Dr. Bierer reviewed TA label
+BLENREP,Oncology,,,,Treatment of multiple myeloma,2020,,,,,,47,78,16,2,4,,53,,,61,Yes
+BYFAVO,Anesthesia and Analgesia,,,,Sedation for short procedures,2020,,,,,,52,78,17,4,8,,31,,,100,No. Dr. Bierer reviewed TA label
+CERIANNA,Oncology,,,,Detection of estrogen positive lesions in breast cancer,2020,,,,,,100,15,2,83,0,,NR,,,17,No. Dr. Bierer reviewed TA label
+DANYELZA,Oncology,,,,Treatment of neuroblastoma,2020,,,,,,37,69,3,18,6,,0,,,84,Yes
+DETECTNET,Oncology,,,,Detection of certain neuro-endocrine tumors,2020,,,,,,48,31,3,1,6,,38,,,36,No. Dr. Bierer reviewed TA label
+DOJOLVI,Endocrinology and Metabolism,,,,Source of calories for fatty acid oxidation disorder,2020,,,,,,48,87,5,4,9,,0,,,91,No. Dr. Bierer reviewed TA label
+EBANGA,Infectious Disease,,,,Treatment of Ebola infection,2020,,,,,,3,0,0,0,0,,0,,,0,Yes
+ENSPRYNG,Neurology,,,,Treatment of neuromyelitis optica spectrum disorder,2020,,,,,,91,48,12,35,9,,NR,,,29,No. Dr. Bierer reviewed TA label
+EVRYSDI,Neurology,,,,Treatment of spinal muscular atrophy,2020,,,,,,53,69,1,19,3,,0,,,3,Yes
+Ga 68 PSMA-11,Medical Imaging,,,,Detection of specific cancer lesions in men with prostate cancer,2020,,,,,,0,85,2,4,4,,72,,,100,No. Dr. Bierer reviewed TA label
+GAVRETO,Oncology,,,,Treatment of non-small cell lung cancer,2020,,,,,,52,50,0,41,4,,37,,,26,Yes
+GEMTESA,Urology,,,,Treatment of symptoms of overactive bladder,2020,,,,,,85,79,15,5,73,,44,,,90,No. Dr. Bierer reviewed TA label
+IMCIVREE,Endocrinology and Metabolism,,,,Treatment of obesity in patients with certain rare disorder,2020,,,,,,52,67,0,4,7,,0,,,4,No. Dr. Bierer reviewed TA label
+INMAZEB,Infectious Disease,,,,Treatment of Ebola infection,2020,,,,,,55,NR,NR,NR,NR,,NR,,,0,Yes
+INQOVI,Oncology,,,,Treatment of myelodyspastic syndromes,2020,,,,,,31,92,3,2,5,,75,,,82,Yes
+ISTURISA,Endocrinology and Metabolism,,,,Treatment of Cushing's disease,2020,,,,,,77,65,3,29,9,,5,,,18,No. Dr. Bierer reviewed TA label
+KLISYRI,Dermatology,,,,Treatment of actinic keratosis,2020,,,,,,13,100,0,0,4,,73,,,100,No. Dr. Bierer reviewed TA label
+KOSELUGO,Oncology,,,,Treatment of neurofibroma,2020,,,,,,40,84,8,2,4,,0,,,100,Yes
+LAMPIT,Infectious Disease,,,,Treatment of Chagas disease,2020,,,,,,54,71,0,0,99,,0,,,0,Yes
+MARGENZA,Oncology,,,,Treatment of metastatic HER2-positive breast cancer,2020,,,,,,99,80,5,6,9,,21,,,33,Yes
+MONJUVI,Oncology,,,,Treatment of diffuse large b-cell lymphoma,2020,,,,,,46,89,0,3,NR,,69,,,7,Yes
+NEXLETOL,Endocrinology and Metabolism,,,,Treatment of high LDL cholesterol,2020,,,,,,29,96,3,1,3,,58,,,26,No. Dr. Bierer reviewed TA label
+NURTEC,Neurology,,,,Treatment of acute migraine,2020,,,,,,85,75,20,2,19,,2,,,100,Yes
+OLINVYK,Anesthesia and Analgesia,,,,Treatment of acute pain,2020,,,,,,79,72,23,2,19,,18,,,100,No. Dr. Bierer reviewed TA label
+ONGENTYS,Neurology,,,,"Treatment of ""off episodes"" in Parkinson's disease",2020,,,,,,42,85,0,14,NR,,48,,,0,Yes
+ORGOVYX,Oncology,,,,Treatment of prostate cancer,2020,,,,,,0,68,5,21,9,,81,,,24,Yes
+ORLADEYO,Dermatology,,,,Prevention of hereditary angioedema attacks,2020,,,,,,66,94,3,1,3,,8,,,63,No. Dr. Bierer reviewed TA label
+OXLUMO,Endocrinology and Metabolism,,,,Treatment of primary hyperoxaluria type 1,2020,,,,,,40,80,0,11,4,,0,,,25,No. Dr. Bierer reviewed TA label
+PEMAZYRE,Oncology,,,,Treatment of metastatic bile duct cancer,2020,,,,,,57,71,6,15,4,,31,,,61,Yes
+PIZENSY,Gastroenterology,,,,Treatment of chronic idiopathic constipation,2020,,,,,,76,60,31,7,38,,27,,,100,No. Dr. Bierer reviewed TA label
+QINLOCK,Oncology,,,,Treatment of gastrointestinal stromal tumors,2020,,,,,,43,75,8,7,1,,39,,,47,Yes
+RETEVMO,Oncology,,,,Treatment of certain cancers caused by specific genes,2020,,,,,,48,69,3,22,5,,34,,,61,Yes
+RUKOBIA,Infectious Disease,,,,Treatment of HIV-1 infection,2020,,,,,,26,68,22,1,29,,4,,,32,Yes
+SARCLISA,Oncology,,,,Treatment of multiple myeloma,2020,,,,,,48,80,1,12,2,,60,,,2,Yes
+SOGROYA,Endocrinology and Metabolism,,,,Replacement of growth hormone,2020,,,,,,52,67,2,29,6,,14,,,26,No. Dr. Bierer reviewed TA label
+TABRECTA,Oncology,,,,Treatment of non-small cell lung cancer,2020,,,,,,41,74,1,24,7,,57,,,10,Yes
+TAUVID,Neurology,,,,Detection of aggregated neurofibrillary tangles in Alzheimer's disease,2020,,,,,,50,86,5,6,5,,80,,,77,No. Dr. Bierer reviewed TA label
+TAZVERIK,Oncology,,,,Treatment of advanced epithelioid sarcoma,2020,,,,,,37,76,7,11,11,,3,,,65,Yes
+TEPEZZA,Ophthalmology,,,,Treatment of thyroid eye disease,2020,,,,,,73,87,8,4,5,,15,,,57,No. Dr. Bierer reviewed TA label
+TRODELVY,Oncology,,,,Treatment of breast cancer,2020,,,,,,99,76,7,3,7,,18,,,100,Yes
+TUKYSA,Oncology,,,,Treatment of breast cancer,2020,,,,,,99,73,9,4,8,,19,,,54,Yes
+UPLIZNA,Neurology,,,,Treatment of neuromyelitis optica spectrum disorder,2020,,,,,,94,52,9,21,19,,5,,,18,No. Dr. Bierer reviewed TA label
+VEKLURY,Infectious Disease,,,,Treatment of COVID-19,2020,,,,,,37,57,18,14,21,,35,,,65,Yes
+VILTEPSO,Neurology,,,,Treatment of Duchenne muscular dystrophy,2020,,,,,,0,44,0,56,6,,0,,,38,Yes
+VYEPTI,Neurology,,,,Treatment of migraine,2020,,,,,,87,88,9,1,12,,1,,,68,Yes
+WINLEVI,Dermatology,,,,Treatment of acne vulgaris,2020,,,,,,63,90,6,2,14,,0,,,41,No. Dr. Bierer reviewed TA label
+XEGLYZE,Dermatology,,,,Treatment of head lice,2020,,,,,,84,97,1,0,66,,0,,,100,No. Dr. Bierer reviewed TA label
+ZEPOSIA,Neurology,,,,Treatment of multiple sclerosis,2020,,,,,,67,99,1,0,1,,0,,,3,Yes
+ZEPZELCA,Oncology,,,,Treatment of small cell lung cancer,2020,,,,,,40,75,1,1,NR,,35,,,10,Yes
+ZOKINVY,Endocrinology and Metabolism,,,,Treatment of rare conditions related to premature aging,2020,,,,,,48,NR,NR,NR,NR,,0,,,19,No. Dr. Bierer reviewed TA label
