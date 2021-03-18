@@ -343,7 +343,7 @@ server <- function(input, output) {
                                                       max(input$participation[2]), by = 2),1)) +
                 xlab("Percent participation in trials for FDA approval") +
                 ylab("Number of FDA approvals") +
-                ggtitle("Number of FDA approvals with given percent participation in its trials \n e.g., across 2015-2019 we see 19 and 45 FDA approved products had 0 and 1 percent Black participation in its trials") +
+                ggtitle("Number of FDA approvals with given percent participation in its trials") +
                 facet_wrap(~Demographic, ncol=1)
         }
         
