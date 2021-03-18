@@ -1,4 +1,4 @@
-# Shiny App to Explore FDA Drug Trials Snapshots 2015-2019 Data Set
+# Shiny App to Explore FDA Drug Trials Snapshots 2015-2020 Data Set
 # Author: Ariel Carmeli (ariel_carmeli@hms.harvard.edu)
 
 library(shiny)
