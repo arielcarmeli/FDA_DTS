@@ -5,11 +5,9 @@ library(shiny)
 library(tidyverse)
 library(lubridate)
 library(dplyr)
+library(scales) 
 
-# install.packages("scales")
-library(scales) # for problem 1.2a. Need to make sure scales is installed!
-
-fda_approvals <- read.csv('FDA_Drug_Trials_Snapshots_2015-19.csv')
+fda_approvals <- read.csv('FDA_Drug_Trials_Snapshots_2015-20.csv')
 
 # Change class type of select variables to aid in data processing and visualization
 fda_approvals$Enrollment <- as.numeric(as.character(fda_approvals$Enrollment))
@@ -19,7 +17,7 @@ fda_approvals$United_States <- as.numeric(as.character(fda_approvals$United_Stat
 
 # Add a column to group trial size
 fda_approvals <- fda_approvals %>% 
-    mutate( Enrollment_bucket = case_when(
+    mutate(Enrollment_bucket = case_when(
         Enrollment < 100 ~ "a. 1-99 patients", 
         Enrollment >= 100 & Enrollment < 200 ~ "b. 100-199 patients", 
         Enrollment >= 200 & Enrollment < 300 ~ "c. 200-299 patients",
@@ -45,7 +43,7 @@ ui <- fluidPage(
     titlePanel("FDA Drug Trials Snapshots - Data Explorer"),
     
     tabsetPanel( # Problem 2.1 - add tab set to the window
-        tabPanel("All 2015-2019 FDA Approvals", # Problem 2.1 - add Product Details tab
+        tabPanel("All 2015-2020 FDA Approvals", # Problem 2.1 - add Product Details tab
             sidebarLayout(
                 sidebarPanel(
                      selectInput(
@@ -86,7 +84,7 @@ ui <- fluidPage(
                          "year",
                          "Year(s)",
                          choices=unique(fda_approvals$Approval_Year),
-                         selected = c(2015, 2016, 2017, 2018, 2019),
+                         selected = c(2015, 2016, 2017, 2018, 2019, 2020),
                          multiple=T
                      ),
                      
@@ -172,7 +170,7 @@ server <- function(input, output) {
     
     # lazy loading, first access will be slow
     #data <- neiss_2008_2018
-    fda_approvals <- read.csv('FDA_Drug_Trials_Snapshots_2015-19.csv')
+    fda_approvals <- read.csv('FDA_Drug_Trials_Snapshots_2015-20.csv')
     
     print( "Data loaded!" )
     print( dim(fda_approvals) )
