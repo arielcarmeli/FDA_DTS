@@ -104,10 +104,10 @@ ui <- fluidPage(
                  mainPanel(
                      
                      h2("How consistent is diversity in FDA approvals?"),
-                     plotOutput("individualPlot"),
+                     plotOutput("individualPlot", height=700),
                      
                      h2("Count (Density) of trial participation"),
-                     plotOutput("participationCountPlot"),
+                     plotOutput("participationCountPlot", height=700),
                      
                      h2("Approval Details"),
                      DT::dataTableOutput("approvalsTable"),
@@ -153,8 +153,10 @@ ui <- fluidPage(
                      
                  ), 
                  mainPanel(
+                      
+                     
                      h2("How consistent is diversity in FDA approvals in selected TA?"),
-                     plotOutput("TA_individualPlot"),
+                     plotOutput("TA_individualPlot", height = 700),
                      
                      h2("Approval Details"),
                      DT::dataTableOutput("TA_approvalsTable"),
@@ -299,7 +301,7 @@ server <- function(input, output) {
         if ( input$is_TA_Stratified ) {
             plot <- plot + 
                 facet_wrap(~Therapeutic_Area) + 
-                scale_y_continuous(breaks = round(seq(min(0), max(100), by = 25),1))
+                scale_y_continuous(breaks = round(seq(min(0), max(100), by = 10),1))
         }
         
         if ( input$is_Year_labelled ) {
@@ -338,7 +340,7 @@ server <- function(input, output) {
                 filter(Percentage <= input$participation[2]) %>% 
                 ggplot(aes(Percentage, y=Count, width=1)) +
                 geom_bar(stat = "identity", position = 'dodge') +
-                geom_text(aes(label=Count), position = position_dodge(0.9), vjust=-0.3, size=2) +
+                geom_text(aes(label=Count), position = position_dodge(0.9), vjust=-0.3, size=3) +
                 scale_x_continuous(breaks = round(seq(min(input$participation[1]), 
                                                       max(input$participation[2]), by = 2),1)) +
                 xlab("Percent participation in trials for FDA approval") +
@@ -356,7 +358,6 @@ server <- function(input, output) {
             #filter(Percentage >= input$participation[1]) %>% 
             #filter(Percentage <= input$participation[2]) %>%
             pivot_wider(names_from = Demographic, values_from = Percentage), options=list(pageLength=10)
-        
     )
     
     output$TA_individualPlot <- renderPlot({
