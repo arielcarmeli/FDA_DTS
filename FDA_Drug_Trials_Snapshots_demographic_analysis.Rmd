@@ -473,13 +473,13 @@ fda_approvals_long %>%
 
 # Race over time
 fda_approvals_long %>% 
-  filter(Demographic == "White" | Demographic == "Black" | Demographic == "Asian" | Demographic == "Hispanic") %>% 
-  #filter(Demographic == "Hispanic") %>%
+  #filter(Demographic == "White" | Demographic == "Black" | Demographic == "Asian" | Demographic == "Hispanic") %>% 
+  filter(Demographic == "Black") %>%
   #filter(Approval_Year == 2)
   ggplot(aes(Percentage/100, colour = factor(Approval_Year))) + stat_ecdf(geom = "step") +
   #facet_wrap(~Demographic, ncol=3) + 
-  scale_x_continuous(breaks = round(seq(min(0), max(1), by = 0.01),1)) +
-  scale_y_continuous(breaks = round(seq(min(0), max(1), by = 0.1),1)) +
+  scale_x_continuous(breaks = round(seq(min(0), max(1), by = 0.05),5)) +
+  scale_y_continuous(breaks = round(seq(min(0), max(1), by = 0.05),5)) +
   theme(axis.title.x = element_text(size=15), 
         axis.title.y = element_text(size=15),
         axis.text.x = element_text(size=15),
@@ -489,10 +489,10 @@ fda_approvals_long %>%
         legend.position = "top", 
         legend.title = element_blank()
         ) +
-  facet_wrap(~Demographic) + 
+  #facet_wrap(~Demographic) + 
   ylab("Cumulative percentage of FDA approvals") +
   xlab("Representation in clinical trials") +
-  ggtitle("Cumulative distribution of Demographic participation in trials by year (2015-19)")
+  ggtitle("Cumulative distribution of Demographic participation in trials by year (2015-20)")
 
 ```
 

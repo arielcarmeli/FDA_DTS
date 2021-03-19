@@ -51,7 +51,7 @@ ui <- fluidPage(
                          "Race",
                          #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
                          choices= c("Asian", "Black", "White", "Other"),
-                         selected = c("Asian", "Black", "White", "Other"),
+                         selected = c("Asian", "Black", "White"),
                          multiple=T
                      ),
                      
@@ -60,7 +60,7 @@ ui <- fluidPage(
                          "Ethnicity",
                          #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
                          choices= c("Hispanic", "Non_Hispanic"),
-                         #selected = c("Hispanic", "Non_Hispanic"),
+                         selected = c("Hispanic"),
                          multiple=T
                      ),
                      
@@ -109,6 +109,9 @@ ui <- fluidPage(
                      h2("Distribution of trial participation"),
                      plotOutput("participationCountPlot", height=700),
                      
+                     h2("Has diversity in clinical trials improved from 2015-2020?"),
+                     plotOutput("cum_participationCountPlot", height=700),
+                     
                      h2("Approval Details"),
                      DT::dataTableOutput("approvalsTable"),
                  )
@@ -122,7 +125,7 @@ ui <- fluidPage(
                          "Race",
                          #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
                          choices= c("Asian", "Black", "White", "Other"),
-                         selected = c("Asian", "Black", "White", "Other"),
+                         selected = c("Asian", "Black", "White"),
                          multiple=T
                      ), 
                      
@@ -131,7 +134,7 @@ ui <- fluidPage(
                          "Ethnicity",
                          #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
                          choices= c("Hispanic", "Non_Hispanic"),
-                         #selected = c("Hispanic", "Non_Hispanic"),
+                         selected = c("Hispanic"),
                          multiple=T
                      ),
                      
@@ -157,6 +160,9 @@ ui <- fluidPage(
                      
                      h2("How consistent is diversity in FDA approvals in selected TA?"),
                      plotOutput("TA_individualPlot", height = 700),
+                     
+                     h2("Has diversity in clinical trials improved in selected TA from 2015-2020?"),
+                     plotOutput("TA_cum_participationCountPlot", height=700),
                      
                      h2("Approval Details"),
                      DT::dataTableOutput("TA_approvalsTable"),
@@ -267,6 +273,26 @@ server <- function(input, output) {
         selection
     })
     
+    # reactive expression for the count chart
+    approvals_cum_count <- reactive({
+        selection <- fda_approvals_long %>% 
+            select(-Comparison) %>% 
+            select(-Compared) %>% 
+            filter(Percentage != "NA")
+        
+        if ( !is.null( input$race ) | !is.null( input$ethnicity ) ) {
+            selection <- selection %>% filter( Demographic %in% input$race | Demographic %in% input$ethnicity )
+        }
+        
+        if ( !is.null( input$year ) ) {
+            selection <- selection %>% filter( Approval_Year %in% input$year )
+        }
+        
+        #selection$Approval_Year <- as.character(selection$Approval_Year)
+        
+        selection
+    })
+    
     
     # Reactive expression to filter selected approvals on the TA/disease tab 
     approvals_TA <- reactive({
@@ -352,6 +378,29 @@ server <- function(input, output) {
         plot
     })
     
+    output$cum_participationCountPlot <- renderPlot({
+        
+        plot <- approvals_cum_count() %>%
+            ggplot(aes(Percentage/100, colour = factor(Approval_Year))) + stat_ecdf(geom = "step") +
+            scale_x_continuous(breaks = round(seq(min(0), max(1), by = 0.05),2)) +
+            scale_y_continuous(breaks = round(seq(min(0), max(1), by = 0.05),2)) +
+            theme(axis.title.x = element_text(size=15), 
+                  axis.title.y = element_text(size=15),
+                  axis.text.x = element_text(size=8),
+                  axis.text.y = element_text(size=8),
+                  title = element_text(size=15),
+                  legend.text=element_text(size=20), 
+                  legend.position = "top", 
+                  legend.title = element_blank()
+            ) +
+            facet_wrap(~Demographic, ncol = 2) + 
+            ylab("Cumulative percentage of FDA approvals") +
+            xlab("Representation in clinical trials") +
+            ggtitle("Cumulative distribution of Demographic participation in trials by year")
+        
+        plot
+    })
+    
     output$approvalsTable <- DT::renderDataTable(
         approvals() %>% 
             select(-Enrollment_bucket) %>% 
@@ -375,6 +424,29 @@ server <- function(input, output) {
                 facet_wrap(~Disease) + 
                 scale_y_continuous(breaks = round(seq(min(0), max(100), by = 10),1))
         }
+        
+        plot
+    })
+    
+    output$TA_cum_participationCountPlot <- renderPlot({
+        
+        plot <- approvals_TA() %>%
+            ggplot(aes(Percentage/100, colour = factor(Approval_Year))) + stat_ecdf(geom = "step") +
+            scale_x_continuous(breaks = round(seq(min(0), max(1), by = 0.05),2)) +
+            scale_y_continuous(breaks = round(seq(min(0), max(1), by = 0.05),2)) +
+            theme(axis.title.x = element_text(size=15), 
+                  axis.title.y = element_text(size=15),
+                  axis.text.x = element_text(size=8),
+                  axis.text.y = element_text(size=8),
+                  title = element_text(size=15),
+                  legend.text=element_text(size=20), 
+                  legend.position = "top", 
+                  legend.title = element_blank()
+            ) +
+            facet_wrap(~Demographic, ncol = 2) + 
+            ylab("Cumulative percentage of FDA approvals") +
+            xlab("Representation in clinical trials") +
+            ggtitle("Cumulative distribution of Demographic participation in trials by year")
         
         plot
     })

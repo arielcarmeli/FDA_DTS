@@ -1,0 +1,13 @@
+name: FDA_DTS_Mar19
+title: FDA_DTS_Mar19
+username:
+account: arielcarmeli
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3821941
+bundleId: 4369429
+url: https://arielcarmeli.shinyapps.io/FDA_DTS_Mar19/
+when: 1616173058.24095
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: FDA_Drug_Trials_Snapshots_2015-19.csv
