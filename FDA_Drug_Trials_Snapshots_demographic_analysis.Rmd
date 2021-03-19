@@ -18,12 +18,12 @@ library(knitr)
 ```
 
 
-```{r, include=FALSE}
+```{r}
 # Read in clinical trial data
-fda_approvals <- read.csv('FDA_Drug_Trials_Snapshots_2015-19.csv')
+fda_approvals <- read.csv('FDA_Drug_Trials_Snapshots_2015-20.csv')
 
 # Change class type of select variables to aid in data processing and visualization
-fda_approvals$Trial_size <- as.numeric(as.character(fda_approvals$Trial_size))
+fda_approvals$Trial_size <- as.numeric(as.character(fda_approvals$Enrollment))
 fda_approvals$Therapeutic_Area <- as.character(fda_approvals$Therapeutic_Area)
 fda_approvals$Brand_Name <- as.character(fda_approvals$Brand_Name)
 fda_approvals$United_States <- as.numeric(as.character(fda_approvals$United_States))
@@ -471,6 +471,28 @@ fda_approvals_long %>%
   xlab("Relative participation in clinical trials") +
   ggtitle("Cumulative distribution of race and ethnicity participation in trials (2015-19)")
 
+# Race over time
+fda_approvals_long %>% 
+  filter(Demographic == "White" | Demographic == "Black" | Demographic == "Asian" | Demographic == "Hispanic") %>% 
+  #filter(Demographic == "Hispanic") %>%
+  #filter(Approval_Year == 2)
+  ggplot(aes(Percentage/100, colour = factor(Approval_Year))) + stat_ecdf(geom = "step") +
+  #facet_wrap(~Demographic, ncol=3) + 
+  scale_x_continuous(breaks = round(seq(min(0), max(1), by = 0.01),1)) +
+  scale_y_continuous(breaks = round(seq(min(0), max(1), by = 0.1),1)) +
+  theme(axis.title.x = element_text(size=15), 
+        axis.title.y = element_text(size=15),
+        axis.text.x = element_text(size=15),
+        axis.text.y = element_text(size=15),
+        title = element_text(size=15),
+        legend.text=element_text(size=20), 
+        legend.position = "top", 
+        legend.title = element_blank()
+        ) +
+  facet_wrap(~Demographic) + 
+  ylab("Cumulative percentage of FDA approvals") +
+  xlab("Representation in clinical trials") +
+  ggtitle("Cumulative distribution of Demographic participation in trials by year (2015-19)")
 
 ```
 

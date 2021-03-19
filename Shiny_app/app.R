@@ -106,7 +106,7 @@ ui <- fluidPage(
                      h2("How consistent is diversity in FDA approvals?"),
                      plotOutput("individualPlot", height=700),
                      
-                     h2("Count (Density) of trial participation"),
+                     h2("Distribution of trial participation"),
                      plotOutput("participationCountPlot", height=700),
                      
                      h2("Approval Details"),
