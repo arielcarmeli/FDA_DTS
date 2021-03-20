@@ -64,13 +64,13 @@ ui <- fluidPage(
                          multiple=T
                      ),
                      
-                     sliderInput(
-                         "participation",
-                         "Filter participation by",
-                         min=0,
-                         max=100,
-                         value=c(0, 100)
-                     ),
+                     #sliderInput(
+                     #    "participation",
+                     #    "Filter participation by",
+                     #    min=0,
+                     #    max=100,
+                     #    value=c(0, 100)
+                     #),
                      
                      radioButtons( 
                          "is_TA_Stratified", 
@@ -234,8 +234,8 @@ server <- function(input, output) {
         
         # Find unique set of drugs that have participation values in the bounds from input
         drugs <- selection %>% 
-            filter(Percentage >= input$participation[1]) %>% 
-            filter(Percentage <= input$participation[2]) %>% 
+            #filter(Percentage >= input$participation[1]) %>% 
+            #filter(Percentage <= input$participation[2]) %>% 
             group_by(Brand_Name) %>% 
             unique()
         
@@ -316,13 +316,13 @@ server <- function(input, output) {
     output$individualPlot <- renderPlot({
         
         plot <- approvals() %>% 
-            filter(Percentage >= input$participation[1]) %>% 
-            filter(Percentage <= input$participation[2]) %>% 
+            #filter(Percentage >= input$participation[1]) %>% 
+            #filter(Percentage <= input$participation[2]) %>% 
             ggplot(aes(Demographic, Percentage)) +
             #geom_jitter(width = 0.2, aes(colour=Demographic)) + 
             theme(legend.position = "top", legend.title = element_blank()) +
             scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
-            ggtitle("Participation in clinical trials by demographic \n (Each dot represents % participation in one trial)")
+            ggtitle("Distribution of clinical trial participation \n (Red dot = mean. Blue dot = median)")
         
         if ( input$is_TA_Stratified ) {
             plot <- plot + 
@@ -331,10 +331,25 @@ server <- function(input, output) {
         }
         
         if ( input$is_Year_labelled ) {
-            plot <- plot + geom_jitter(width = 0.2, aes(colour=Approval_Year))
+            plot <- approvals() %>% 
+                #filter(Percentage >= input$participation[1]) %>% 
+                #filter(Percentage <= input$participation[2]) %>% 
+                ggplot(aes(as.factor(Approval_Year), Percentage)) +
+                geom_violin(aes(fill=as.factor(Approval_Year))) +
+                stat_summary(fun=mean, geom="point", color="red") +
+                stat_summary(fun=median, geom="point", color="blue") +
+                facet_wrap(~Demographic) +
+                xlab("Approval Year") +
+                theme(legend.position = "top", legend.title = element_blank()) +
+                scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
+                ggtitle("Distribution of clinical trial participation \n (Red dot = mean. Blue dot = median)")
+            #plot <- plot + geom_jitter(width = 0.2, aes(colour=Approval_Year))
         }
         else{
-            plot <- plot + geom_jitter(width = 0.2, aes(colour=Demographic))
+            plot <- plot + geom_violin(aes(fill=Demographic))
+            plot <- plot + stat_summary(fun=mean, geom="point", color="red")
+            plot <- plot + stat_summary(fun=median, geom="point", color="blue")
+            #plot <- plot + geom_jitter(width = 0.2, aes(colour=Demographic))
         }
         
         plot
@@ -342,38 +357,21 @@ server <- function(input, output) {
     
     output$participationCountPlot <- renderPlot({
         
-        if ( input$is_Year_labelled ) {
-            # line plot - split by year
-            plot <- approvals_count() %>% 
-                filter(Percentage >= input$participation[1]) %>% 
-                filter(Percentage <= input$participation[2]) %>% 
-                ggplot(aes(Percentage, y=Count, width=1, group = Approval_Year)) +
-                geom_point(aes(colour = Approval_Year), stat = "identity") +
-                #geom_line(aes(colour = Approval_Year), stat = "identity") +
-                scale_x_continuous(breaks = round(seq(min(input$participation[1]), 
-                                                      max(input$participation[2]), by = 2),1)) +
-                xlab("Percent participation in trials for FDA approval") +
-                ylab("Count") +
-                ggtitle("Number of FDA approvals with given percent participation in its trials") +
-                facet_wrap(~Demographic, ncol=1)
-        }
-        else {
-            # bar chart - for all years
-            plot <- approvals_count() %>% 
-                group_by(Demographic, Percentage) %>% 
-                summarize(Count = sum(Count)) %>% 
-                filter(Percentage >= input$participation[1]) %>% 
-                filter(Percentage <= input$participation[2]) %>% 
-                ggplot(aes(Percentage, y=Count, width=1)) +
-                geom_bar(stat = "identity", position = 'dodge') +
-                geom_text(aes(label=Count), position = position_dodge(0.9), vjust=-0.3, size=3) +
-                scale_x_continuous(breaks = round(seq(min(input$participation[1]), 
-                                                      max(input$participation[2]), by = 2),1)) +
-                xlab("Percent participation in trials for FDA approval") +
-                ylab("Number of FDA approvals") +
-                ggtitle("Number of FDA approvals with given percent participation in its trials") +
-                facet_wrap(~Demographic, ncol=1)
-        }
+        # bar chart - for all years
+        plot <- approvals_count() %>% 
+            group_by(Demographic, Percentage) %>% 
+            summarize(Count = sum(Count)) %>% 
+            filter(Percentage <= 25) %>%
+            #filter(Percentage >= input$participation[1]) %>% 
+            #filter(Percentage <= input$participation[2]) %>% 
+            ggplot(aes(Percentage, y=Count, width=1)) +
+            geom_bar(stat = "identity", position = 'dodge') +
+            geom_text(aes(label=Count), position = position_dodge(0.9), vjust=-0.3, size=3) +
+            scale_x_continuous(breaks = round(seq(0, 25, by = 1),1)) +
+            xlab("Percent participation in trials for FDA approval") +
+            ylab("Number of FDA approvals") +
+            ggtitle("Number of FDA approvals with given percent participation in its trials") +
+            facet_wrap(~Demographic, ncol=1)
         
         plot
     })

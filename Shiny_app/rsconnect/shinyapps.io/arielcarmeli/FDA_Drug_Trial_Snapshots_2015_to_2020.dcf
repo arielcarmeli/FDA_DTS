@@ -5,9 +5,9 @@ account: arielcarmeli
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 3812911
-bundleId: 4362189
+bundleId: 4370696
 url: https://arielcarmeli.shinyapps.io/FDA_Drug_Trial_Snapshots_2015_to_2020/
-when: 1616049204.23345
+when: 1616199330.89304
 asMultiple: FALSE
 asStatic: FALSE
 ignoredFiles: FDA_Drug_Trials_Snapshots_2015-19.csv
