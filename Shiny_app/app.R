@@ -35,7 +35,6 @@ fda_approvals <- fda_approvals %>% mutate(Non_Hispanic = 100 - Hispanic, .after 
 
 # Create longer version, for plotting
 fda_approvals_long <- pivot_longer(fda_approvals, cols = Women:Age_80_or_older, names_to = "Demographic", values_to = "Percentage")
-
 fda_approvals_long <- fda_approvals_long %>% pivot_longer(cols = Sex_comparison:Age_comparison, names_to = "Comparison", values_to = "Compared")
 
 # Change class type of variable in long
@@ -43,10 +42,25 @@ fda_approvals_long$Percentage <- as.numeric(as.character(fda_approvals_long$Perc
 
 ui <- fluidPage(
     
-    titlePanel("FDA Drug Trials Snapshots - Data Explorer"),
+    titlePanel("2015-2020 FDA Drug Trials Snapshots - Data Explorer"),
     
-    tabsetPanel( # Problem 2.1 - add tab set to the window
-        tabPanel("All 2015-2020 FDA Approvals", # Problem 2.1 - add Product Details tab
+    tabsetPanel( 
+        
+        tabPanel("Welcome + Instructions",
+            
+        ),
+        
+        tabPanel("Descriptive Statistics",
+                mainPanel(
+             
+                h2("Total enrollment by Therapeutic Area"),
+                plotOutput("DS_Enrollment_by_TA", height=700, width = 1000),
+            
+                )
+                 
+        ),
+        
+        tabPanel("All FDA Approvals",
             sidebarLayout(
                 sidebarPanel(
                      selectInput(
@@ -120,7 +134,7 @@ ui <- fluidPage(
                  )
              )
         ), 
-        tabPanel("By Therapeutic Area & Disease",
+        tabPanel("Detail by Therapeutic Area & Disease",
             sidebarLayout(
                 sidebarPanel(
                      selectInput(
@@ -177,6 +191,12 @@ ui <- fluidPage(
 
 server <- function(input, output) {
 
+    # default no adjustment
+    approvals_default <- reactive({
+        selection <- fda_approvals
+        selection
+    })
+    
     # reactive expression to filter selected approvals
     approvals <- reactive({
         selection <- fda_approvals_long %>%
@@ -273,6 +293,60 @@ server <- function(input, output) {
         
     })
 
+    output$DS_Enrollment_by_TA <- renderPlot({
+        
+        df <- approvals_default() %>% 
+            filter(Approval_Year != 2020) %>% 
+            select(Therapeutic_Area, Enrollment) %>% 
+            mutate(Therapeutic_Area = case_when(
+                Therapeutic_Area == "Oncology" ~ "Oncology and Hematology", 
+                Therapeutic_Area == "Hematology" ~ "Oncology and Hematology",
+                Therapeutic_Area == "Hematology (Sickle cell)" ~ "Oncology and Hematology",
+                Therapeutic_Area == "Endocrinology and Metabolism" ~ "Endocrinology and Metabolism",
+                Therapeutic_Area == "Infectious Diseases" ~ "Infectious Diseases",
+                Therapeutic_Area == "Neurology" ~ "Neurology",
+                Therapeutic_Area == "Gynecology" ~ "Gynecology",
+                Therapeutic_Area == "Dermatology" ~ "Dermatology",
+                Therapeutic_Area == "Pulmonology and Rheumatology" ~ "Pulmonology and Rheumatology",
+                Therapeutic_Area == "Gastroenterology" ~ "Gastroenterology",
+                Therapeutic_Area == "Psychiatry" ~ "Psychiatry",
+                Therapeutic_Area == "Sleep Disorders" ~ "Psychiatry",
+                Therapeutic_Area == "Ophthalmology" ~ "Ophthalmology",
+                Therapeutic_Area == "Anesthesia and Analgesia" ~ "Anesthesia and Analgesia",
+                Therapeutic_Area == "Medical Imaging" ~ "Medical Imaging",
+                Therapeutic_Area == "Cardiovascular Diseases" ~ "Cardiovascular Diseases"
+            )) %>% 
+            group_by(Therapeutic_Area) %>% 
+            summarize(Our_database = sum(Enrollment)) %>% 
+            arrange(desc(Our_database))
+        
+        # Cardio, Onc, Endocrin, ID, Neurology, Derm, Gyn, Pulm/Rheum, GI, Psychiatry, Anaesthesia, Ophthal, Medical Imaging
+        fda_snapshots <- c(59000, 35000, 41000, 32500, 26000, 20500, 21000, 20000, 15000, 10500, 6500, 4500, 1500)
+        
+        Total_patients_check <- data.frame(df$Therapeutic_Area, 
+                                           df$Our_database, 
+                                           fda_snapshots)
+        names(Total_patients_check) <- c("Therapeutic_Area", "Our_Database", 
+                                         "FDA_Snapshots")
+        
+        fda_approvals_check_long <- pivot_longer(Total_patients_check, cols = Our_Database:FDA_Snapshots, 
+                                                 names_to = "Database", values_to = "Participants")
+        
+        Patient_participation_graph <- fda_approvals_check_long %>% 
+            ggplot(aes(reorder(Therapeutic_Area, Participants), Participants, fill=Database)) +
+            geom_bar(stat = "identity", position = 'dodge') +
+            geom_text(aes(label=Participants), position = position_dodge(0.9), hjust=-0.15, size=5) +
+            coord_flip() + 
+            xlab("Therapeutic Area") +
+            ylab("Number of Participants") + 
+            theme(text = element_text(size=20)) +
+            ggtitle("Patient participation by Therapeutic Area [FDA approvals 2015-19]")
+        
+        Patient_participation_graph
+        
+    })
+    
+    
     output$individualPlot <- renderPlot({
         
         plot <- approvals() %>% 
