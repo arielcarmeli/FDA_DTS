@@ -7,7 +7,10 @@ library(lubridate)
 library(dplyr)
 library(scales) 
 
+# Read in the data
+print( "Loading data ..." )
 fda_approvals <- read.csv('FDA_Drug_Trials_Snapshots_2015-20.csv')
+print( "Data loaded!" )
 
 # Change class type of select variables to aid in data processing and visualization
 fda_approvals$Enrollment <- as.numeric(as.character(fda_approvals$Enrollment))
@@ -173,50 +176,7 @@ ui <- fluidPage(
 )
 
 server <- function(input, output) {
-    
-    print( "Loading data ..." )
-    
-    # lazy loading, first access will be slow
-    #data <- neiss_2008_2018
-    fda_approvals <- read.csv('FDA_Drug_Trials_Snapshots_2015-20.csv')
-    
-    print( "Data loaded!" )
-    print( dim(fda_approvals) )
-    
-    print( "Processing data ..." )
-    
-    # Change class type of select variables to aid in data processing and visualization
-    fda_approvals$Enrollment <- as.numeric(as.character(fda_approvals$Enrollment))
-    fda_approvals$Therapeutic_Area <- as.character(fda_approvals$Therapeutic_Area)
-    fda_approvals$Brand_Name <- as.character(fda_approvals$Brand_Name)
-    fda_approvals$United_States <- as.numeric(as.character(fda_approvals$United_States))
-    
-    # Add a column to group trial size
-    fda_approvals <- fda_approvals %>% 
-        mutate( Enrollment_bucket = case_when(
-            Enrollment < 100 ~ "a. 1-99 patients", 
-            Enrollment >= 100 & Enrollment < 200 ~ "b. 100-199 patients", 
-            Enrollment >= 200 & Enrollment < 300 ~ "c. 200-299 patients",
-            Enrollment >= 300 & Enrollment < 500 ~ "d. 300-499 patients",
-            Enrollment >= 500 & Enrollment < 1000 ~ "e. 500-999 patients",
-            Enrollment >= 1000 & Enrollment < 2000 ~ "f. 1000-1999 patients",
-            Enrollment >= 2000  ~ "g. Over 2000 patients"
-        ), .after = Enrollment)
-    
-    # Add a column for non-hispanic 
-    fda_approvals <- fda_approvals %>% mutate(Non_Hispanic = 100 - Hispanic, .after = Hispanic)
-    
-    # Create longer version, for plotting
-    fda_approvals_long <- pivot_longer(fda_approvals, cols = Women:Age_80_or_older, names_to = "Demographic", values_to = "Percentage")
-    
-    fda_approvals_long <- fda_approvals_long %>% pivot_longer(cols = Sex_comparison:Age_comparison, names_to = "Comparison", values_to = "Compared")
-    
-    # Change class type of variable in long
-    fda_approvals_long$Percentage <- as.numeric(as.character(fda_approvals_long$Percentage))
-    
-    print( "Data processed!" )
-    #print( dim(data) )
-    
+
     # reactive expression to filter selected approvals
     approvals <- reactive({
         selection <- fda_approvals_long %>%
