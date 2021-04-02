@@ -30,12 +30,14 @@ fda_approvals <- fda_approvals %>%
         Enrollment >= 2000  ~ "g. Over 2000 patients"
     ), .after = Enrollment)
 
-# Add a column for non-hispanic 
+# Add columns for non-hispanic, Men, Age under 65 
 fda_approvals <- fda_approvals %>% mutate(Non_Hispanic = 100 - Hispanic, .after = Hispanic)
+fda_approvals <- fda_approvals %>% mutate(Men = 100 - Women, .after = Women)
+fda_approvals <- fda_approvals %>% mutate(Age_under_65 = 100 - Age_65_or_older, .after = Age_65_or_older)
 
 # Create longer version, for plotting
 fda_approvals_long <- pivot_longer(fda_approvals, cols = Women:Age_80_or_older, names_to = "Demographic", values_to = "Percentage")
-fda_approvals_long <- fda_approvals_long %>% pivot_longer(cols = Sex_comparison:Age_comparison, names_to = "Comparison", values_to = "Compared")
+#fda_approvals_long <- fda_approvals_long %>% pivot_longer(cols = Sex_comparison:Age_comparison, names_to = "Comparison", values_to = "Compared")
 
 # Change class type of variable in long
 fda_approvals_long$Percentage <- as.numeric(as.character(fda_approvals_long$Percentage))
@@ -229,8 +231,8 @@ server <- function(input, output) {
     # reactive expression for the count chart
     approvals_count <- reactive({
         selection <- fda_approvals_long %>% 
-            select(-Comparison) %>% 
-            select(-Compared) %>% 
+            #select(-Comparison) %>% 
+            #select(-Compared) %>% 
             filter(Percentage != "NA")
         
         if ( !is.null( input$race ) | !is.null( input$ethnicity ) ) {
@@ -256,8 +258,8 @@ server <- function(input, output) {
     # reactive expression for the count chart
     approvals_cum_count <- reactive({
         selection <- fda_approvals_long %>% 
-            select(-Comparison) %>% 
-            select(-Compared) %>% 
+            #select(-Comparison) %>% 
+            #select(-Compared) %>% 
             filter(Percentage != "NA")
         
         if ( !is.null( input$race ) | !is.null( input$ethnicity ) ) {
@@ -346,8 +348,32 @@ server <- function(input, output) {
         
     })
     
-    
     output$individualPlot <- renderPlot({
+        
+        plot <- approvals() %>% 
+            ggplot(aes(Demographic, Percentage)) +
+            geom_jitter(width = 0.2, aes(colour=Demographic)) + 
+            theme(legend.position = "top", legend.title = element_blank()) +
+            scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
+            ggtitle("Distribution of clinical trial participation")
+        
+        if ( input$is_TA_Stratified ) {
+            plot <- plot + 
+                facet_wrap(~Therapeutic_Area) + 
+                scale_y_continuous(breaks = round(seq(min(0), max(100), by = 10),1))
+        }
+        
+        if ( input$is_Year_labelled ) {
+            plot <- plot + geom_jitter(width = 0.2, aes(colour=Approval_Year))
+        }
+        else{
+            plot <- plot + geom_jitter(width = 0.2, aes(colour=Demographic))
+        }
+        
+        plot
+    })
+    
+    output$individualPlot_Violin <- renderPlot({
         
         plot <- approvals() %>% 
             #filter(Percentage >= input$participation[1]) %>% 
@@ -387,7 +413,7 @@ server <- function(input, output) {
         }
         
         plot
-    })#, height = 800, width = 1200)
+    })
     
     output$participationCountPlot <- renderPlot({
         
