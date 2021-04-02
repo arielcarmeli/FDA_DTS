@@ -497,11 +497,28 @@ server <- function(input, output) {
     })
     
     output$stats_summary_Table <- DT::renderDataTable(
-        approvals() %>% 
-            #select(-Enrollment_bucket) %>% 
-            #filter(Percentage >= input$participation[1]) %>% 
-            #filter(Percentage <= input$participation[2]) %>%
-            pivot_wider(names_from = Demographic, values_from = Percentage), options=list(pageLength=10)
+        if ( input$is_TA_Stratified ) {
+            approvals() %>% 
+                group_by(Demographic, Therapeutic_Area) %>% 
+                summarize(Min = min(Percentage),
+                          #25quartile = quantile(Percentage, 0.25),
+                          Median = round(median(Percentage), 0), 
+                          #75quartile = quantile(Percentage, 0.75),
+                          Average = round(mean(Percentage), 0),
+                          Max = max(Percentage)
+                )
+        }
+        else{
+            approvals() %>% 
+            group_by(Demographic) %>% 
+            summarize(Min = min(Percentage),
+                      #25quartile = quantile(Percentage, 0.25),
+                      Median = round(median(Percentage), 0), 
+                      #75quartile = quantile(Percentage, 0.75),
+                      Average = round(mean(Percentage), 0),
+                      Max = max(Percentage)
+                      )
+        }
     )
     
     output$participationCountPlot <- renderPlot({
