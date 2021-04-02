@@ -7,6 +7,7 @@ library(lubridate)
 library(dplyr)
 library(scales) 
 library(RColorBrewer)
+library(kableExtra)
 
 # Read in the data
 print( "Loading data ..." )
@@ -53,12 +54,17 @@ ui <- fluidPage(
             
         ),
         
-        tabPanel("Descriptive Statistics",
+        tabPanel("Validation",
                 mainPanel(
              
                 h2("Total enrollment by Therapeutic Area"),
-                plotOutput("DS_Enrollment_by_TA", height=700, width = 1000),
+                tags$a(href = "https://www.fda.gov/media/143592/download", "Recreating page 30 in 2015-19 DTS report"),
+                plotOutput("Validation_Enrollment_by_TA", height=700, width = 1000),
             
+                h2("Demographics of Trial Participation"),
+                tags$a(href = "https://www.fda.gov/media/143592/download", "Recreating page 9 in 2015-19 DTS report"),
+                plotOutput("Validation_Demographics", height=300, width = 1000),
+                
                 )
                  
         ),
@@ -89,7 +95,8 @@ ui <- fluidPage(
                          "Age",
                          #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
                          choices= c("Age_under_65", "Age_65_or_older"),
-                         selected = c("Age_under_65", "Age_65_or_older"),
+                         #selected = c("Age_under_65", "Age_65_or_older"),
+                         selected = FALSE,
                          multiple=T
                      ),
                      
@@ -98,7 +105,8 @@ ui <- fluidPage(
                          "Sex",
                          #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
                          choices= c("Women", "Men"),
-                         selected = c("Women", "Men"),
+                         #selected = c("Women", "Men"),
+                         selected = FALSE,
                          multiple=T
                      ),
                      
@@ -144,7 +152,7 @@ ui <- fluidPage(
                      h2("How consistent is diversity in FDA approvals?"),
                      plotOutput("individualPlot", height=700),
                      
-                     h2("How many FDA approvals have under 25% of a demographic in its trials?"),
+                     #h2("How many FDA approvals have under 25% of a demographic in its trials?"),
                      plotOutput("participationCountPlot", height=700),
                      
                      h2("Has diversity in clinical trials improved from 2015-2020?"),
@@ -229,8 +237,8 @@ ui <- fluidPage(
 server <- function(input, output) {
 
     # default no adjustment
-    approvals_default <- reactive({
-        selection <- fda_approvals
+    approvals_15_19 <- reactive({
+        selection <- fda_approvals %>% filter(Approval_Year != 2020)
         selection
     })
     
@@ -334,17 +342,17 @@ server <- function(input, output) {
         
     })
 
-    output$DS_Enrollment_by_TA <- renderPlot({
+    output$Validation_Enrollment_by_TA <- renderPlot({
         
-        df <- approvals_default() %>% 
-            filter(Approval_Year != 2020) %>% 
+        df <- approvals_15_19() %>% 
+            #filter(Approval_Year != 2020) %>% 
             select(Therapeutic_Area, Enrollment) %>% 
             mutate(Therapeutic_Area = case_when(
                 Therapeutic_Area == "Oncology" ~ "Oncology and Hematology", 
                 Therapeutic_Area == "Hematology" ~ "Oncology and Hematology",
                 Therapeutic_Area == "Hematology (Sickle cell)" ~ "Oncology and Hematology",
                 Therapeutic_Area == "Endocrinology and Metabolism" ~ "Endocrinology and Metabolism",
-                Therapeutic_Area == "Infectious Diseases" ~ "Infectious Diseases",
+                Therapeutic_Area == "Infectious Disease" ~ "Infectious Disease",
                 Therapeutic_Area == "Neurology" ~ "Neurology",
                 Therapeutic_Area == "Gynecology" ~ "Gynecology",
                 Therapeutic_Area == "Dermatology" ~ "Dermatology",
@@ -378,6 +386,7 @@ server <- function(input, output) {
             geom_bar(stat = "identity", position = 'dodge') +
             geom_text(aes(label=Participants), position = position_dodge(0.9), hjust=-0.15, size=5) +
             coord_flip() + 
+            ylim(0,70000) +
             xlab("Therapeutic Area") +
             ylab("Number of Participants") + 
             theme(text = element_text(size=20)) +
@@ -385,6 +394,49 @@ server <- function(input, output) {
         
         Patient_participation_graph
         
+    })
+    
+    output$Validation_Demographics <- renderPlot({
+        global_black_participation <- approvals_15_19() %>% 
+            select(Brand_Name, Enrollment, Black) %>% 
+            filter(Black != "NA") %>% 
+            mutate(Black_participants = (Black/100) * Enrollment)
+        
+        global_white_participation <- approvals_15_19() %>% 
+            select(Brand_Name, Enrollment, White) %>% 
+            filter(White != "NA") %>% 
+            mutate(White_participants = (White/100) * Enrollment)
+        
+        global_asian_participation <- approvals_15_19() %>% 
+            select(Brand_Name, Enrollment, Asian) %>% 
+            filter(Asian != "NA") %>% 
+            mutate(Asian_participants = (Asian/100) * Enrollment)
+        
+        demographic_participation <- c(round(sum(100 * global_asian_participation$Asian_participants) /
+                                                 sum(global_asian_participation$Enrollment), 0), 
+                                       round(sum(100 * global_black_participation$Black_participants) / 
+                                                 sum(global_black_participation$Enrollment), 0),
+                                       round(sum(100 * global_white_participation$White_participants) / 
+                                                 sum(global_white_participation$Enrollment), 0))
+        
+        fda_snapshots <- c(11, 7, 76)
+        races <- c("Asian", "Black or African American", "White")
+        
+        Race_distribution_comparison <- data.frame(races, fda_snapshots, demographic_participation)
+        names(Race_distribution_comparison) <- c("Race", "FDA_Snapshots", "Our_Database")
+        
+        Race_distribution_comparison_graph <- Race_distribution_comparison %>% 
+            pivot_longer(cols = FDA_Snapshots:Our_Database, names_to = "Database", values_to = "Participation") %>% 
+            ggplot(aes(Race, Participation, fill = Database)) +
+            geom_bar(stat = "identity", position = 'dodge') +
+            geom_text(aes(label=Participation), position = position_dodge(0.9), vjust=-0.3, size=6) +
+            ylim(0,100) +
+            xlab("Race") +
+            ylab("Participation") + 
+            theme(text = element_text(size=15), axis.text.x = element_text(size=15)) +
+            ggtitle("Race distribution of trial participants")
+        
+        Race_distribution_comparison_graph
     })
     
     output$individualPlot <- renderPlot({
@@ -468,10 +520,11 @@ server <- function(input, output) {
             ggplot(aes(Percentage, y=Count, width=1)) +
             geom_bar(stat = "identity", position = 'dodge') +
             geom_text(aes(label=Count), position = position_dodge(0.9), vjust=-0.3, size=3) +
+            ylim(0,65) +
             scale_x_continuous(breaks = round(seq(0, 25, by = 1),1)) +
             xlab("Percent participation in trials for FDA approval") +
             ylab("Number of FDA approvals") +
-            ggtitle("Number of FDA approvals with given percent participation in its trials") +
+            ggtitle("Number of FDA approvals with under 25 percent participation by demographic in its trials") +
             facet_wrap(~Demographic, ncol=1)
         
         plot
