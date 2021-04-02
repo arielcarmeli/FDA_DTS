@@ -12,6 +12,7 @@ library(kableExtra)
 # Read in the data
 print( "Loading data ..." )
 fda_approvals <- read.csv('FDA_Drug_Trials_Snapshots_2015-20.csv')
+disease_burden_df <- read.csv('Disease_burden.csv')
 print( "Data loaded!" )
 
 # Change class type of select variables to aid in data processing and visualization
@@ -40,6 +41,10 @@ ui <- fluidPage(
         
         tabPanel("Welcome + Instructions",
             
+        ),
+        
+        tabPanel("Dataset Contents",
+                 
         ),
         
         tabPanel("Validation",
@@ -211,6 +216,9 @@ ui <- fluidPage(
                      h2("How consistent is diversity in FDA approvals in selected TA?"),
                      plotOutput("TA_individualPlot", height = 700),
                      
+                     h2("How does clinical trial representation compare with disease burden?"),
+                     plotOutput("TA_Disease_Burden_Comparison", height = 700),
+                     
                      h2("Has diversity in clinical trials improved in selected TA from 2015-2020?"),
                      plotOutput("TA_cum_participationCountPlot", height=700),
                      
@@ -224,6 +232,18 @@ ui <- fluidPage(
 
 server <- function(input, output) {
 
+    # reactive for disease burden
+    disease_burden <- reactive({
+        selection <- disease_burden_df
+        
+        if ( !is.null( input$therapeutic_area ) ) {
+            selection <- selection %>% filter( Therapeutic_Area %in% input$therapeutic_area )
+        }
+        
+        selection
+    })
+    
+    
     # default no adjustment
     approvals_15_19 <- reactive({
         selection <- fda_approvals %>% filter(Approval_Year != 2020)
@@ -237,7 +257,7 @@ server <- function(input, output) {
             filter(Percentage != "NA") %>% 
             unique()
 
-        if ( !is.null( input$race ) | !is.null( input$ethnicity ) ) {
+        if ( !is.null( input$race ) | !is.null( input$ethnicity ) | !is.null( input$age ) | !is.null( input$sex ) ) {
             selection <- selection %>% filter( Demographic %in% input$race | Demographic %in% input$ethnicity | Demographic %in% input$age | Demographic %in% input$sex)
         }
         
@@ -602,6 +622,28 @@ server <- function(input, output) {
         }
         
         plot
+    })
+    
+    output$TA_Disease_Burden_Comparison <- renderPlot({
+        burden <- disease_burden()# %>% sort(Disease)
+        trials <- approvals_TA() %>% 
+            pivot_wider(names_from = Demographic, values_from = Percentage) #%>% 
+        #    arrange(-Disease)
+        
+        df <- data.frame(trials$Disease, 
+                         burden$Black,
+                         burden$Hispanic,
+                         trials$Black,
+                         trials$Hispanic)
+        
+        #titles <- c("Disease", "Black_burden", "Hispanic_burden")
+        
+        #Race_distribution_comparison <- data.frame(races, fda_snapshots, demographic_participation)
+        #names(Race_distribution_comparison) <- c("Race", "FDA_Snapshots", "Our_Database")
+        
+        #df %>% 
+            
+        
     })
     
     output$TA_cum_participationCountPlot <- renderPlot({
