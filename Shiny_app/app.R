@@ -20,18 +20,6 @@ fda_approvals$Therapeutic_Area <- as.character(fda_approvals$Therapeutic_Area)
 fda_approvals$Brand_Name <- as.character(fda_approvals$Brand_Name)
 fda_approvals$United_States <- as.numeric(as.character(fda_approvals$United_States))
 
-# Add a column to group trial size
-fda_approvals <- fda_approvals %>% 
-    mutate(Enrollment_bucket = case_when(
-        Enrollment < 100 ~ "a. 1-99 patients", 
-        Enrollment >= 100 & Enrollment < 200 ~ "b. 100-199 patients", 
-        Enrollment >= 200 & Enrollment < 300 ~ "c. 200-299 patients",
-        Enrollment >= 300 & Enrollment < 500 ~ "d. 300-499 patients",
-        Enrollment >= 500 & Enrollment < 1000 ~ "e. 500-999 patients",
-        Enrollment >= 1000 & Enrollment < 2000 ~ "f. 1000-1999 patients",
-        Enrollment >= 2000  ~ "g. Over 2000 patients"
-    ), .after = Enrollment)
-
 # Add columns for non-hispanic, Men, Age under 65 
 fda_approvals <- fda_approvals %>% mutate(Non_Hispanic = 100 - Hispanic, .after = Hispanic)
 fda_approvals <- fda_approvals %>% mutate(Men = 100 - Women, .after = Women)
@@ -151,7 +139,7 @@ ui <- fluidPage(
                      
                      h2("How consistent is diversity in FDA approvals?"),
                      plotOutput("individualPlot", height=700),
-                     
+                     DT::dataTableOutput("stats_summary_Table"),
                      #h2("How many FDA approvals have under 25% of a demographic in its trials?"),
                      plotOutput("participationCountPlot", height=700),
                      
@@ -245,7 +233,7 @@ server <- function(input, output) {
     # reactive expression to filter selected approvals
     approvals <- reactive({
         selection <- fda_approvals_long %>%
-            select(Brand_Name, Therapeutic_Area, Indication, Enrollment, Demographic, Percentage, Approval_Year, Enrollment_bucket) %>%
+            select(Brand_Name, Therapeutic_Area, Indication, Enrollment, Demographic, Percentage, Approval_Year) %>%
             filter(Percentage != "NA") %>% 
             unique()
 
@@ -322,7 +310,7 @@ server <- function(input, output) {
     # Reactive expression to filter selected approvals on the TA/disease tab 
     approvals_TA <- reactive({
         selection <- fda_approvals_long %>%
-            select(Brand_Name, Therapeutic_Area, Disease, Indication, Enrollment, Demographic, Percentage, Approval_Year, Enrollment_bucket) %>%
+            select(Brand_Name, Therapeutic_Area, Disease, Indication, Enrollment, Demographic, Percentage, Approval_Year) %>%
             filter(Percentage != "NA") %>% 
             unique()
         
@@ -508,6 +496,14 @@ server <- function(input, output) {
         plot
     })
     
+    output$stats_summary_Table <- DT::renderDataTable(
+        approvals() %>% 
+            #select(-Enrollment_bucket) %>% 
+            #filter(Percentage >= input$participation[1]) %>% 
+            #filter(Percentage <= input$participation[2]) %>%
+            pivot_wider(names_from = Demographic, values_from = Percentage), options=list(pageLength=10)
+    )
+    
     output$participationCountPlot <- renderPlot({
         
         # bar chart - for all years
@@ -555,7 +551,7 @@ server <- function(input, output) {
     
     output$approvalsTable <- DT::renderDataTable(
         approvals() %>% 
-            select(-Enrollment_bucket) %>% 
+            #select(-Enrollment_bucket) %>% 
             #filter(Percentage >= input$participation[1]) %>% 
             #filter(Percentage <= input$participation[2]) %>%
             pivot_wider(names_from = Demographic, values_from = Percentage), options=list(pageLength=10)
@@ -616,7 +612,7 @@ server <- function(input, output) {
     
     output$TA_approvalsTable <- DT::renderDataTable(
         approvals_TA() %>% 
-            select(-Enrollment_bucket) %>%
+            #select(-Enrollment_bucket) %>%
             pivot_wider(names_from = Demographic, values_from = Percentage), options=list(pageLength=10)
     )
     
