@@ -6,6 +6,7 @@ library(tidyverse)
 library(lubridate)
 library(dplyr)
 library(scales) 
+library(RColorBrewer)
 
 # Read in the data
 print( "Loading data ..." )
@@ -83,6 +84,24 @@ ui <- fluidPage(
                          multiple=T
                      ),
                      
+                     selectInput(
+                         "age",
+                         "Age",
+                         #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
+                         choices= c("Age_under_65", "Age_65_or_older"),
+                         selected = c("Age_under_65", "Age_65_or_older"),
+                         multiple=T
+                     ),
+                     
+                     selectInput(
+                         "sex",
+                         "Sex",
+                         #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
+                         choices= c("Women", "Men"),
+                         selected = c("Women", "Men"),
+                         multiple=T
+                     ),
+                     
                      #sliderInput(
                      #    "participation",
                      #    "Filter participation by",
@@ -125,7 +144,7 @@ ui <- fluidPage(
                      h2("How consistent is diversity in FDA approvals?"),
                      plotOutput("individualPlot", height=700),
                      
-                     h2("Distribution of trial participation"),
+                     h2("How many FDA approvals have under 25% of a demographic in its trials?"),
                      plotOutput("participationCountPlot", height=700),
                      
                      h2("Has diversity in clinical trials improved from 2015-2020?"),
@@ -146,7 +165,7 @@ ui <- fluidPage(
                          choices= c("Asian", "Black", "White", "Other"),
                          selected = c("Asian", "Black", "White"),
                          multiple=T
-                     ), 
+                     ),
                      
                      selectInput(
                          "ethnicity_TA_page",
@@ -154,6 +173,14 @@ ui <- fluidPage(
                          #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
                          choices= c("Hispanic", "Non_Hispanic"),
                          selected = c("Hispanic"),
+                         multiple=T
+                     ),
+                     
+                     selectInput(
+                         "year_TA_page",
+                         "Year(s)",
+                         choices=unique(fda_approvals$Approval_Year),
+                         selected = c(2015, 2016, 2017, 2018, 2019, 2020),
                          multiple=T
                      ),
                      
@@ -168,6 +195,14 @@ ui <- fluidPage(
                      radioButtons( 
                          "is_Disease_Stratified", 
                          "Stratify by Disease?", 
+                         choiceNames=list( "Yes", "No" ), 
+                         choiceValues=list(TRUE,FALSE),
+                         selected=FALSE
+                     ),
+                     
+                     radioButtons( 
+                         "is_Enrollment_Stratified", 
+                         "View Enrollment size?", 
                          choiceNames=list( "Yes", "No" ), 
                          choiceValues=list(TRUE,FALSE),
                          selected=FALSE
@@ -207,7 +242,7 @@ server <- function(input, output) {
             unique()
 
         if ( !is.null( input$race ) | !is.null( input$ethnicity ) ) {
-            selection <- selection %>% filter( Demographic %in% input$race | Demographic %in% input$ethnicity )
+            selection <- selection %>% filter( Demographic %in% input$race | Demographic %in% input$ethnicity | Demographic %in% input$age | Demographic %in% input$sex)
         }
         
         if ( !is.null( input$year ) ) {
@@ -236,7 +271,7 @@ server <- function(input, output) {
             filter(Percentage != "NA")
         
         if ( !is.null( input$race ) | !is.null( input$ethnicity ) ) {
-            selection <- selection %>% filter( Demographic %in% input$race | Demographic %in% input$ethnicity )
+            selection <- selection %>% filter( Demographic %in% input$race | Demographic %in% input$ethnicity | Demographic %in% input$age | Demographic %in% input$sex )
         }
         
         if ( !is.null( input$year ) ) {
@@ -255,7 +290,7 @@ server <- function(input, output) {
         selection
     })
     
-    # reactive expression for the count chart
+    # reactive expression for the cumulative chart
     approvals_cum_count <- reactive({
         selection <- fda_approvals_long %>% 
             #select(-Comparison) %>% 
@@ -263,7 +298,7 @@ server <- function(input, output) {
             filter(Percentage != "NA")
         
         if ( !is.null( input$race ) | !is.null( input$ethnicity ) ) {
-            selection <- selection %>% filter( Demographic %in% input$race | Demographic %in% input$ethnicity )
+            selection <- selection %>% filter( Demographic %in% input$race | Demographic %in% input$ethnicity | Demographic %in% input$age | Demographic %in% input$sex)
         }
         
         if ( !is.null( input$year ) ) {
@@ -285,6 +320,10 @@ server <- function(input, output) {
         
         if ( !is.null( input$race_TA_page ) | !is.null( input$ethnicity_TA_page ) ) {
             selection <- selection %>% filter( Demographic %in% input$race_TA_page | Demographic %in% input$ethnicity_TA_page )
+        }
+        
+        if ( !is.null( input$year_TA_page ) ) {
+            selection <- selection %>% filter( Approval_Year %in% input$year_TA_page )
         }
         
         if ( !is.null( input$therapeutic_area ) ) {
@@ -352,7 +391,7 @@ server <- function(input, output) {
         
         plot <- approvals() %>% 
             ggplot(aes(Demographic, Percentage)) +
-            geom_jitter(width = 0.2, aes(colour=Demographic)) + 
+            #geom_jitter(width = 0.2, aes(colour=Demographic)) + 
             theme(legend.position = "top", legend.title = element_blank()) +
             scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
             ggtitle("Distribution of clinical trial participation")
@@ -364,7 +403,9 @@ server <- function(input, output) {
         }
         
         if ( input$is_Year_labelled ) {
-            plot <- plot + geom_jitter(width = 0.2, aes(colour=Approval_Year))
+            plot <- plot + 
+                geom_jitter(width = 0.2, aes(colour=Approval_Year))
+                #scale_color_brewer(palette="Greys")
         }
         else{
             plot <- plot + geom_jitter(width = 0.2, aes(colour=Demographic))
@@ -470,12 +511,23 @@ server <- function(input, output) {
     output$TA_individualPlot <- renderPlot({
         
         plot <- approvals_TA() %>% 
-            ggplot(aes(Demographic, Percentage)) + 
-            geom_jitter(width = 0.2, aes(colour=Demographic)) + 
-            theme(legend.position = "top", legend.title = element_blank()) +
-            scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
-            ggtitle("Participation in clinical trials by demographic \n 
+            ggplot(aes(Demographic, Percentage))
+        
+        if ( input$is_Enrollment_Stratified ) {
+            plot <- plot + geom_jitter(width = 0.2, aes(colour=Demographic, size = Enrollment)) + 
+                theme(legend.position = "top", legend.title = element_blank()) +
+                scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
+                ggtitle("Participation in clinical trials by demographic \n 
                     Each dot represents % participation in one trial")
+            
+        }   
+        else{
+            plot <- plot + geom_jitter(width = 0.2, aes(colour=Demographic)) + 
+                theme(legend.position = "top", legend.title = element_blank()) +
+                scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
+                ggtitle("Participation in clinical trials by demographic \n 
+                    Each dot represents % participation in one trial")
+        }
         
         if ( input$is_Disease_Stratified ) {
             plot <- plot + 
