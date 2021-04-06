@@ -7,7 +7,7 @@ library(lubridate)
 library(dplyr)
 library(scales) 
 library(RColorBrewer)
-library(kableExtra)
+#library(kableExtra)
 
 # Read in the data
 print( "Loading data ..." )
@@ -517,27 +517,32 @@ server <- function(input, output) {
     })
     
     output$stats_summary_Table <- DT::renderDataTable(
-        if ( input$is_TA_Stratified ) {
+        
+        if ( input$is_TA_Stratified ) { 
+            if (input$is_Year_labelled) { # Year and TA
+                approvals() %>% 
+                    group_by(Demographic, Therapeutic_Area, Approval_Year) %>% 
+                    summarize(Median = round(median(Percentage), 1), 
+                              Average = round(mean(Percentage), 1))
+            }
+            else{ # TA only
+                approvals() %>% 
+                    group_by(Demographic, Therapeutic_Area) %>% 
+                    summarize(Median = round(median(Percentage), 1), 
+                              Average = round(mean(Percentage), 1))
+            }
+        }
+        else if ( input$is_Year_labelled) { # Year only
             approvals() %>% 
-                group_by(Demographic, Therapeutic_Area) %>% 
-                summarize(Min = min(Percentage),
-                          #25quartile = quantile(Percentage, 0.25),
-                          Median = round(median(Percentage), 0), 
-                          #75quartile = quantile(Percentage, 0.75),
-                          Average = round(mean(Percentage), 0),
-                          Max = max(Percentage)
-                )
+                group_by(Demographic, Approval_Year) %>% 
+                summarize(Median = round(median(Percentage), 1), 
+                          Average = round(mean(Percentage), 1))
         }
         else{
             approvals() %>% 
-            group_by(Demographic) %>% 
-            summarize(Min = min(Percentage),
-                      #25quartile = quantile(Percentage, 0.25),
-                      Median = round(median(Percentage), 0), 
-                      #75quartile = quantile(Percentage, 0.75),
-                      Average = round(mean(Percentage), 0),
-                      Max = max(Percentage)
-                      )
+                group_by(Demographic) %>% 
+                summarize(Median = round(median(Percentage), 1), 
+                          Average = round(mean(Percentage), 1))
         }
     )
     
