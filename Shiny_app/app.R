@@ -286,7 +286,7 @@ server <- function(input, output) {
             #select(-Compared) %>% 
             filter(Percentage != "NA")
         
-        if ( !is.null( input$race ) | !is.null( input$ethnicity ) ) {
+        if ( !is.null( input$race ) | !is.null( input$ethnicity ) | !is.null( input$age ) | !is.null( input$sex ) ) {
             selection <- selection %>% filter( Demographic %in% input$race | Demographic %in% input$ethnicity | Demographic %in% input$age | Demographic %in% input$sex )
         }
         
@@ -313,7 +313,7 @@ server <- function(input, output) {
             #select(-Compared) %>% 
             filter(Percentage != "NA")
         
-        if ( !is.null( input$race ) | !is.null( input$ethnicity ) ) {
+        if ( !is.null( input$race ) | !is.null( input$ethnicity ) | !is.null( input$age ) | !is.null( input$sex ) ) {
             selection <- selection %>% filter( Demographic %in% input$race | Demographic %in% input$ethnicity | Demographic %in% input$age | Demographic %in% input$sex)
         }
         
