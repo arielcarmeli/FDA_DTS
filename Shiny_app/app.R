@@ -12,7 +12,7 @@ library(RColorBrewer)
 # Read in the data
 print( "Loading data ..." )
 fda_approvals <- read.csv('FDA_Drug_Trials_Snapshots_2015-20.csv')
-disease_burden_df <- read.csv('Disease_burden.csv')
+#disease_burden_df <- read.csv('Disease_burden.csv')
 print( "Data loaded!" )
 
 # Change class type of select variables to aid in data processing and visualization
@@ -381,12 +381,13 @@ server <- function(input, output) {
         fda_snapshots <- c(59000, 35000, 41000, 32500, 26000, 20500, 21000, 20000, 15000, 10500, 6500, 4500, 1500)
         
         Total_patients_check <- data.frame(df$Therapeutic_Area, 
-                                           df$Our_database, 
-                                           fda_snapshots)
-        names(Total_patients_check) <- c("Therapeutic_Area", "Our_Database", 
-                                         "FDA_Snapshots")
+                                           df$Our_database)#, fda_snapshots)
+        names(Total_patients_check) <- c("Therapeutic_Area", "Our_Database")#, "FDA_Snapshots")
         
-        fda_approvals_check_long <- pivot_longer(Total_patients_check, cols = Our_Database:FDA_Snapshots, 
+        #fda_approvals_check_long <- pivot_longer(Total_patients_check, cols = Our_Database:FDA_Snapshots, 
+        #                                         names_to = "Database", values_to = "Participants")
+        
+        fda_approvals_check_long <- pivot_longer(Total_patients_check, cols = Our_Database, 
                                                  names_to = "Database", values_to = "Participants")
         
         Patient_participation_graph <- fda_approvals_check_long %>% 
