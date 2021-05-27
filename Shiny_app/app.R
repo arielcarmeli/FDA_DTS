@@ -269,7 +269,7 @@ server <- function(input, output) {
     # reactive expression to filter selected approvals
     approvals <- reactive({
         selection <- fda_approvals_long %>%
-            select(Brand_Name, Therapeutic_Area, Indication, Enrollment, Demographic, Percentage, Approval_Year, Sponsor) %>%
+            select(Brand_Name, Therapeutic_Area, Disease, Indication, Enrollment, Demographic, Percentage, Approval_Year, Sponsor) %>%
             filter(Percentage != "NA") %>% 
             unique()
 
@@ -472,7 +472,10 @@ server <- function(input, output) {
     output$individualPlot <- renderPlotly({
         
         plot <- approvals() %>% 
-            ggplot(aes(Demographic, Percentage, text = paste("Drug:", Brand_Name))) +
+            ggplot(aes(Demographic, Percentage, text = paste("Drug:", Brand_Name, 
+                                                             "<br>TA:", Therapeutic_Area,
+                                                             "<br>Disease:", Disease
+                                                             ))) +
             #geom_jitter(width = 0.2, aes(colour=Demographic)) + 
             theme(legend.position = "top", legend.title = element_blank()) +
             scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
