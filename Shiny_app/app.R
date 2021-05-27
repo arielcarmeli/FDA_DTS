@@ -7,6 +7,7 @@ library(lubridate)
 library(dplyr)
 library(scales) 
 library(RColorBrewer)
+library(plotly)
 #library(kableExtra)
 
 # Read in the data
@@ -151,7 +152,7 @@ ui <- fluidPage(
                  mainPanel(
                      
                      h2("How consistent is diversity in FDA approvals?"),
-                     plotOutput("individualPlot", height=700),
+                     plotlyOutput("individualPlot", height=700),
                      DT::dataTableOutput("stats_summary_Table"),
                      #h2("How many FDA approvals have under 25% of a demographic in its trials?"),
                      plotOutput("participationCountPlot", height=700),
@@ -468,10 +469,10 @@ server <- function(input, output) {
         Race_distribution_comparison_graph
     })
     
-    output$individualPlot <- renderPlot({
+    output$individualPlot <- renderPlotly({
         
         plot <- approvals() %>% 
-            ggplot(aes(Demographic, Percentage)) +
+            ggplot(aes(Demographic, Percentage, text = paste("Drug:", Brand_Name))) +
             #geom_jitter(width = 0.2, aes(colour=Demographic)) + 
             theme(legend.position = "top", legend.title = element_blank()) +
             scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
@@ -492,7 +493,8 @@ server <- function(input, output) {
             plot <- plot + geom_jitter(width = 0.2, aes(colour=Demographic))
         }
         
-        plot
+        ggplotly(plot)
+        
     })
     
     output$individualPlot_Violin <- renderPlot({

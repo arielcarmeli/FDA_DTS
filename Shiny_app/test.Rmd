@@ -1,0 +1,40 @@
+---
+title: "test"
+output: html_document
+---
+
+
+
+```{r}
+fda_approvals <- read.csv('FDA_Drug_Trials_Snapshots_2015-20.csv')
+
+fda_approvals$Enrollment <- as.numeric(as.character(fda_approvals$Enrollment))
+fda_approvals$Therapeutic_Area <- as.character(fda_approvals$Therapeutic_Area)
+fda_approvals$Brand_Name <- as.character(fda_approvals$Brand_Name)
+fda_approvals$United_States <- as.numeric(as.character(fda_approvals$United_States))
+
+# Add columns for non-hispanic, Men, Age under 65 
+fda_approvals <- fda_approvals %>% mutate(Non_Hispanic = 100 - Hispanic, .after = Hispanic)
+fda_approvals <- fda_approvals %>% mutate(Men = 100 - Women, .after = Women)
+fda_approvals <- fda_approvals %>% mutate(Age_under_65 = 100 - Age_65_or_older, .after = Age_65_or_older)
+
+# Create longer version, for plotting
+fda_approvals_long <- pivot_longer(fda_approvals, cols = Women:Age_80_or_older, names_to = "Demographic", values_to = "Percentage")
+
+# Change class type of variable in long
+fda_approvals_long$Percentage <- as.numeric(as.character(fda_approvals_long$Percentage))
+
+fda_approvals_long <- fda_approvals_long %>% filter(Percentage != "NA")
+
+```
+
+
+```{r}
+
+asian <- fda_approvals_long %>% filter(Demographic == "Asian")
+
+fig <- plot_ly(asian, y = ~Percentage, type = "box", boxpoints = "all", jitter = 0.3, pointpos = -1.8, text = ~paste("Sponsor:", Sponsor))
+fig
+
+```
+
