@@ -12,7 +12,7 @@ library(RColorBrewer)
 # Read in the data
 print( "Loading data ..." )
 fda_approvals <- read.csv('FDA_Drug_Trials_Snapshots_2015-20.csv')
-#disease_burden_df <- read.csv('Disease_burden.csv')
+disease_burden <- read.csv('Disease_burden.csv')
 print( "Data loaded!" )
 
 # Change class type of select variables to aid in data processing and visualization
@@ -32,6 +32,14 @@ fda_approvals_long <- pivot_longer(fda_approvals, cols = Women:Age_80_or_older, 
 
 # Change class type of variable in long
 fda_approvals_long$Percentage <- as.numeric(as.character(fda_approvals_long$Percentage))
+
+# Identify sponsors with > X drugs
+sponsors_df <- fda_approvals %>% 
+    select(Sponsor) %>% 
+    group_by(Sponsor) %>% 
+    summarize(Count = n()) %>% 
+    filter(Count >= 2) %>% 
+    select(Sponsor)
 
 ui <- fluidPage(
     
@@ -202,6 +210,14 @@ ui <- fluidPage(
                      ),
                      
                      radioButtons( 
+                         "is_Sponsor_Stratified", 
+                         "Stratify by Sponsor?", 
+                         choiceNames=list( "Yes", "No" ), 
+                         choiceValues=list(TRUE,FALSE),
+                         selected=FALSE
+                     ),
+                     
+                     radioButtons( 
                          "is_Enrollment_Stratified", 
                          "View Enrollment size?", 
                          choiceNames=list( "Yes", "No" ), 
@@ -243,7 +259,6 @@ server <- function(input, output) {
         selection
     })
     
-    
     # default no adjustment
     approvals_15_19 <- reactive({
         selection <- fda_approvals %>% filter(Approval_Year != 2020)
@@ -253,7 +268,7 @@ server <- function(input, output) {
     # reactive expression to filter selected approvals
     approvals <- reactive({
         selection <- fda_approvals_long %>%
-            select(Brand_Name, Therapeutic_Area, Indication, Enrollment, Demographic, Percentage, Approval_Year) %>%
+            select(Brand_Name, Therapeutic_Area, Indication, Enrollment, Demographic, Percentage, Approval_Year, Sponsor) %>%
             filter(Percentage != "NA") %>% 
             unique()
 
@@ -330,7 +345,7 @@ server <- function(input, output) {
     # Reactive expression to filter selected approvals on the TA/disease tab 
     approvals_TA <- reactive({
         selection <- fda_approvals_long %>%
-            select(Brand_Name, Therapeutic_Area, Disease, Indication, Enrollment, Demographic, Percentage, Approval_Year) %>%
+            select(Brand_Name, Therapeutic_Area, Disease, Indication, Enrollment, Demographic, Percentage, Approval_Year, Sponsor) %>%
             filter(Percentage != "NA") %>% 
             unique()
         
@@ -340,6 +355,11 @@ server <- function(input, output) {
         
         if ( !is.null( input$year_TA_page ) ) {
             selection <- selection %>% filter( Approval_Year %in% input$year_TA_page )
+        }
+        
+        if ( input$is_Sponsor_Stratified ) {
+            sponsors <- sponsors_df
+            selection <- selection %>% filter( Sponsor %in% sponsors$Sponsor )
         }
         
         if ( !is.null( input$therapeutic_area ) ) {
@@ -619,6 +639,12 @@ server <- function(input, output) {
                 scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
                 ggtitle("Participation in clinical trials by demographic \n 
                     Each dot represents % participation in one trial")
+        }
+        
+        if ( input$is_Sponsor_Stratified ) {
+            plot <- plot + 
+                facet_wrap(~Sponsor) + 
+                scale_y_continuous(breaks = round(seq(min(0), max(100), by = 10),1))
         }
         
         if ( input$is_Disease_Stratified ) {
