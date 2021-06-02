@@ -202,21 +202,29 @@ ui <- fluidPage(
                          multiple=FALSE
                      ),
                      
-                     radioButtons( 
-                         "is_Disease_Stratified", 
-                         "Stratify by Disease?", 
-                         choiceNames=list( "Yes", "No" ), 
-                         choiceValues=list(TRUE,FALSE),
-                         selected=FALSE
+                     selectInput(
+                         "Stratify_by",
+                         "Stratify by:",
+                         choices = list("None", "Sponsor", "TA_subgroup"),
+                         selected = "None",
+                         multiple = FALSE
                      ),
                      
-                     radioButtons( 
-                         "is_Sponsor_Stratified", 
-                         "Stratify by Sponsor?", 
-                         choiceNames=list( "Yes", "No" ), 
-                         choiceValues=list(TRUE,FALSE),
-                         selected=FALSE
-                     ),
+                     #radioButtons( 
+                     #    "is_Disease_Stratified", 
+                     #    "Stratify by Disease?", 
+                     #    choiceNames=list( "Yes", "No" ), 
+                     #    choiceValues=list(TRUE,FALSE),
+                     #    selected=FALSE
+                     #),
+                     
+                     #radioButtons( 
+                     #    "is_Sponsor_Stratified", 
+                     #    "Stratify by Sponsor?", 
+                     #    choiceNames=list( "Yes", "No" ), 
+                     #    choiceValues=list(TRUE,FALSE),
+                     #    selected=FALSE
+                     #),
                      
                      radioButtons( 
                          "is_Enrollment_Stratified", 
@@ -231,7 +239,7 @@ ui <- fluidPage(
                       
                      
                      h2("How consistent is diversity in FDA approvals in selected TA?"),
-                     plotOutput("TA_individualPlot", height = 700),
+                     plotlyOutput("TA_individualPlot", height = 700),
                      
                      h2("How does clinical trial representation compare with disease burden?"),
                      plotOutput("TA_Disease_Burden_Comparison", height = 700),
@@ -358,7 +366,7 @@ server <- function(input, output) {
             selection <- selection %>% filter( Approval_Year %in% input$year_TA_page )
         }
         
-        if ( input$is_Sponsor_Stratified ) {
+        if ( "Sponsor" %in% input$Stratify_by ) {
             sponsors <- sponsors_df
             selection <- selection %>% filter( Sponsor %in% sponsors$Sponsor )
         }
@@ -472,9 +480,10 @@ server <- function(input, output) {
     output$individualPlot <- renderPlotly({
         
         plot <- approvals() %>% 
-            ggplot(aes(Demographic, Percentage, text = paste("Drug:", Brand_Name, 
-                                                             "<br>TA:", Therapeutic_Area,
-                                                             "<br>Disease:", Disease
+            ggplot(aes(Demographic, Percentage, text = paste("TA:", Therapeutic_Area,
+                                                             "<br>TA_subgroup:", Disease,
+                                                             "<br>Drug:", Brand_Name, 
+                                                             "<br>Sponsor:", Sponsor
                                                              ))) +
             #geom_jitter(width = 0.2, aes(colour=Demographic)) + 
             theme(legend.position = "top", legend.title = element_blank()) +
@@ -625,34 +634,41 @@ server <- function(input, output) {
             pivot_wider(names_from = Demographic, values_from = Percentage), options=list(pageLength=10)
     )
     
-    output$TA_individualPlot <- renderPlot({
+    output$TA_individualPlot <- renderPlotly({
         
         plot <- approvals_TA() %>% 
-            ggplot(aes(Demographic, Percentage))
+            ggplot(aes(Demographic, Percentage, text = paste("TA:", Therapeutic_Area,
+                                                             "<br>TA_subgroup:", Disease,
+                                                             "<br>Drug:", Brand_Name, 
+                                                             "<br>Sponsor:", Sponsor)))
         
         if ( input$is_Enrollment_Stratified ) {
-            plot <- plot + geom_jitter(width = 0.2, aes(colour=Demographic, size = Enrollment)) + 
+            plot <- plot + 
+                geom_jitter(width = 0.2, aes(colour=Demographic, size = Enrollment)) + 
                 theme(legend.position = "top", legend.title = element_blank()) +
                 scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
-                ggtitle("Participation in clinical trials by demographic \n 
-                    Each dot represents % participation in one trial")
+                ggtitle("Participation in clinical trials by demographic <br> Each dot represents % participation in one trial")
             
         }   
         else{
-            plot <- plot + geom_jitter(width = 0.2, aes(colour=Demographic)) + 
+            plot <- plot + 
+                geom_jitter(width = 0.2, aes(colour=Demographic)) + 
                 theme(legend.position = "top", legend.title = element_blank()) +
                 scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
-                ggtitle("Participation in clinical trials by demographic \n 
-                    Each dot represents % participation in one trial")
+                ggtitle("Participation in clinical trials by demographic <br> Each dot represents % participation in one trial")
         }
         
-        if ( input$is_Sponsor_Stratified ) {
+        if ("None" %in% input$Stratify_by){
+            plot <- plot
+        }
+        
+        if ("Sponsor" %in% input$Stratify_by) {
             plot <- plot + 
                 facet_wrap(~Sponsor) + 
                 scale_y_continuous(breaks = round(seq(min(0), max(100), by = 10),1))
         }
         
-        if ( input$is_Disease_Stratified ) {
+        if ("TA_subgroup" %in% input$Stratify_by) {
             plot <- plot + 
                 facet_wrap(~Disease) + 
                 scale_y_continuous(breaks = round(seq(min(0), max(100), by = 10),1))
