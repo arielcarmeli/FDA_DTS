@@ -277,7 +277,7 @@ server <- function(input, output) {
     # reactive expression to filter selected approvals
     approvals <- reactive({
         selection <- fda_approvals_long %>%
-            select(Brand_Name, Therapeutic_Area, Disease, Indication, Enrollment, Demographic, Percentage, Approval_Year, Sponsor) %>%
+            select(Brand_Name, Therapeutic_Area, TA_subgroup, Indication, Indication_long, Enrollment, Demographic, Percentage, Approval_Year, Sponsor) %>%
             filter(Percentage != "NA") %>% 
             unique()
 
@@ -354,7 +354,7 @@ server <- function(input, output) {
     # Reactive expression to filter selected approvals on the TA/disease tab 
     approvals_TA <- reactive({
         selection <- fda_approvals_long %>%
-            select(Brand_Name, Therapeutic_Area, Disease, Indication, Enrollment, Demographic, Percentage, Approval_Year, Sponsor) %>%
+            select(Brand_Name, Therapeutic_Area, TA_subgroup, Indication, Indication_long, Enrollment, Demographic, Percentage, Approval_Year, Sponsor) %>%
             filter(Percentage != "NA") %>% 
             unique()
         
@@ -480,8 +480,8 @@ server <- function(input, output) {
     output$individualPlot <- renderPlotly({
         
         plot <- approvals() %>% 
-            ggplot(aes(Demographic, Percentage, text = paste("TA:", Therapeutic_Area,
-                                                             "<br>TA_subgroup:", Disease,
+            ggplot(aes(Demographic, Percentage, text = paste("Therapeutic Area:", Therapeutic_Area,
+                                                             "<br>Indication:", Indication,
                                                              "<br>Drug:", Brand_Name, 
                                                              "<br>Sponsor:", Sponsor
                                                              ))) +
@@ -637,8 +637,8 @@ server <- function(input, output) {
     output$TA_individualPlot <- renderPlotly({
         
         plot <- approvals_TA() %>% 
-            ggplot(aes(Demographic, Percentage, text = paste("TA:", Therapeutic_Area,
-                                                             "<br>TA_subgroup:", Disease,
+            ggplot(aes(Demographic, Percentage, text = paste("Therapeutic Area:", Therapeutic_Area,
+                                                             "<br>Indication:", Indication,
                                                              "<br>Drug:", Brand_Name, 
                                                              "<br>Sponsor:", Sponsor)))
         
@@ -670,7 +670,7 @@ server <- function(input, output) {
         
         if ("TA_subgroup" %in% input$Stratify_by) {
             plot <- plot + 
-                facet_wrap(~Disease) + 
+                facet_wrap(~TA_subgroup) + 
                 scale_y_continuous(breaks = round(seq(min(0), max(100), by = 10),1))
         }
         
