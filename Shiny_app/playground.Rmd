@@ -3,3 +3,16 @@ title: "playground"
 output: html_document
 ---
 
+### Reading in data
+
+```{r}
+
+```
+
+
+### Page 9 recreation
+
+```{r}
+
+```
+

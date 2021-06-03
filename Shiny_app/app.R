@@ -43,7 +43,7 @@ ui <- fluidPage(
             
         ),
         
-        tabPanel("Descriptive Statistics & Data Set Validation",
+        tabPanel("Descriptive Statistics",
             sidebarLayout(
                 sidebarPanel(
                     radioButtons( 
@@ -59,20 +59,20 @@ ui <- fluidPage(
                  
                     h2("Total enrollment by Therapeutic Area"),
                     tags$a(href = "https://www.fda.gov/media/143592/download", "This graph recreates page 30 in 2015-19 DTS report"),
-                    plotOutput("Validation_Enrollment_by_TA", height=500, width = 1000),
+                    plotOutput("Validation_Enrollment_by_TA", height=350, width = 1000),
                     
                     h2("Demographics of Trial Participation"),
                     tags$a(href = "https://www.fda.gov/media/143592/download", "This graph recreates page 9 in 2015-19 DTS report"),
-                    plotOutput("Validation_Demographics", height=300, width = 1000),
+                    plotOutput("Validation_Demographics", height=200, width = 400),
                     
                     h2("Total approvals by Year"),
-                    plotOutput("Approvals_DS", height=500, width = 1000),
+                    plotOutput("Approvals_DS", height=350, width = 1000),
                     
                     h2("Total patients by Year"),
-                    plotOutput("Patients_DS", height=500, width = 1000),
+                    plotOutput("Patients_DS", height=350, width = 1000),
                     
                     h2("Enrollment by Therapeutic Area"),
-                    plotOutput("Enrollment_TA_boxplot_DS", height=500, width = 1000),
+                    plotOutput("Enrollment_TA_boxplot_DS", height=300, width = 1000),
                      
                     h2("Demographics reported"),
                     plotOutput("Demographics_reported", height=300, width = 1000),
@@ -82,7 +82,7 @@ ui <- fluidPage(
                 
         ),
         
-        tabPanel("All FDA Approvals",
+        tabPanel("Explore FDA Approvals",
             sidebarLayout(
                 sidebarPanel(
                      selectInput(
@@ -162,7 +162,7 @@ ui <- fluidPage(
                  )
              )
         ), 
-        tabPanel("Detail by Therapeutic Area & Disease",
+        tabPanel("Detail by Therapeutic Area",
             sidebarLayout(
                 sidebarPanel(
                      selectInput(
@@ -239,7 +239,6 @@ ui <- fluidPage(
                      
                  ), 
                  mainPanel(
-                      
                      
                      h2("How consistent is diversity in FDA approvals in selected TA?"),
                      plotlyOutput("TA_individualPlot", height = 700),
@@ -491,13 +490,14 @@ server <- function(input, output) {
                                                  names_to = "Database", values_to = "Participants")
         
         Patient_participation_graph <- fda_approvals_check_long %>% 
-            ggplot(aes(reorder(Therapeutic_Area, Participants), Participants, fill=Database)) +
+            ggplot(aes(reorder(Therapeutic_Area, Participants), Participants)) + #, fill=Database)) +
             geom_bar(stat = "identity", position = 'dodge') +
-            geom_text(aes(label=Participants), position = position_dodge(0.9), hjust=-0.15, size=5) +
+            geom_text(aes(label=Participants), position = position_dodge(0.9), hjust=-0.2, size=4) +
             coord_flip() + 
             ylim(0,70000) +
             xlab("Therapeutic Area") +
             ylab("Number of Participants") + 
+            scale_y_continuous(breaks = round(seq(min(0), max(70000), by = 5000),5)) +
             #theme(text = element_text(size=20)) +
             theme(axis.title.x=element_text(size=12, face="bold"), axis.title.y=element_text(size=12, face="bold")) +
             ggtitle("Patient participation by Therapeutic Area [FDA approvals 2015-19]")
@@ -529,15 +529,18 @@ server <- function(input, output) {
                                        round(sum(100 * global_white_participation$White_participants) / 
                                                  sum(global_white_participation$Enrollment), 0))
         
-        fda_snapshots <- c(11, 7, 76)
-        races <- c("Asian", "Black or African American", "White")
+        #fda_snapshots <- c(11, 7, 76)
+        races <- c("Asian", "Black", "White")
         
-        Race_distribution_comparison <- data.frame(races, fda_snapshots, demographic_participation)
-        names(Race_distribution_comparison) <- c("Race", "FDA_Snapshots", "Our_Database")
+        #Race_distribution_comparison <- data.frame(races, fda_snapshots, demographic_participation)
+        #names(Race_distribution_comparison) <- c("Race", "FDA_Snapshots", "Our_Database")
+        
+        Race_distribution_comparison <- data.frame(races, demographic_participation)
+        names(Race_distribution_comparison) <- c("Race", "Our_Database")
         
         Race_distribution_comparison_graph <- Race_distribution_comparison %>% 
-            pivot_longer(cols = FDA_Snapshots:Our_Database, names_to = "Database", values_to = "Participation") %>% 
-            ggplot(aes(Race, Participation, fill = Database)) +
+            pivot_longer(cols = Our_Database, names_to = "Database", values_to = "Participation") %>% 
+            ggplot(aes(Race, Participation, width = 0.5)) + #, fill = Database)) +
             geom_bar(stat = "identity", position = 'dodge') +
             geom_text(aes(label=Participation), position = position_dodge(0.9), vjust=-0.3, size=6) +
             ylim(0,100) +
