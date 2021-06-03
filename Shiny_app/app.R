@@ -29,18 +29,9 @@ fda_approvals <- fda_approvals %>% mutate(Age_under_65 = 100 - Age_65_or_older, 
 
 # Create longer version, for plotting
 fda_approvals_long <- pivot_longer(fda_approvals, cols = Women:Age_80_or_older, names_to = "Demographic", values_to = "Percentage")
-#fda_approvals_long <- fda_approvals_long %>% pivot_longer(cols = Sex_comparison:Age_comparison, names_to = "Comparison", values_to = "Compared")
 
 # Change class type of variable in long
 fda_approvals_long$Percentage <- as.numeric(as.character(fda_approvals_long$Percentage))
-
-# Identify sponsors with > X drugs
-sponsors_df <- fda_approvals %>% 
-    select(Sponsor) %>% 
-    group_by(Sponsor) %>% 
-    summarize(Count = n()) %>% 
-    filter(Count >= 2) %>% 
-    select(Sponsor)
 
 ui <- fluidPage(
     
@@ -52,23 +43,43 @@ ui <- fluidPage(
             
         ),
         
-        tabPanel("Dataset Contents",
-                 
-        ),
-        
-        tabPanel("Validation",
+        tabPanel("Descriptive Statistics & Data Set Validation",
+            sidebarLayout(
+                sidebarPanel(
+                    radioButtons( 
+                        "DS_TA_stratify", 
+                        "Stratify by Therapeutic Area?", 
+                        choiceNames=list( "Yes", "No" ), 
+                        choiceValues=list(TRUE,FALSE),
+                        selected=FALSE
+                    )
+                ),
+                         
                 mainPanel(
-             
-                h2("Total enrollment by Therapeutic Area"),
-                tags$a(href = "https://www.fda.gov/media/143592/download", "Recreating page 30 in 2015-19 DTS report"),
-                plotOutput("Validation_Enrollment_by_TA", height=700, width = 1000),
-            
-                h2("Demographics of Trial Participation"),
-                tags$a(href = "https://www.fda.gov/media/143592/download", "Recreating page 9 in 2015-19 DTS report"),
-                plotOutput("Validation_Demographics", height=300, width = 1000),
-                
-                )
                  
+                    h2("Total enrollment by Therapeutic Area"),
+                    tags$a(href = "https://www.fda.gov/media/143592/download", "This graph recreates page 30 in 2015-19 DTS report"),
+                    plotOutput("Validation_Enrollment_by_TA", height=500, width = 1000),
+                    
+                    h2("Demographics of Trial Participation"),
+                    tags$a(href = "https://www.fda.gov/media/143592/download", "This graph recreates page 9 in 2015-19 DTS report"),
+                    plotOutput("Validation_Demographics", height=300, width = 1000),
+                    
+                    h2("Total approvals by Year"),
+                    plotOutput("Approvals_DS", height=500, width = 1000),
+                    
+                    h2("Total patients by Year"),
+                    plotOutput("Patients_DS", height=500, width = 1000),
+                    
+                    h2("Enrollment by Therapeutic Area"),
+                    plotOutput("Enrollment_TA_boxplot_DS", height=500, width = 1000),
+                     
+                    h2("Demographics reported"),
+                    plotOutput("Demographics_reported", height=300, width = 1000),
+                    
+                )
+            )
+                
         ),
         
         tabPanel("All FDA Approvals",
@@ -77,7 +88,6 @@ ui <- fluidPage(
                      selectInput(
                          "race",
                          "Race",
-                         #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
                          choices= c("Asian", "Black", "White", "Other"),
                          selected = c("Asian", "Black", "White"),
                          multiple=T
@@ -86,7 +96,6 @@ ui <- fluidPage(
                      selectInput(
                          "ethnicity",
                          "Ethnicity",
-                         #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
                          choices= c("Hispanic", "Non_Hispanic"),
                          selected = c("Hispanic"),
                          multiple=T
@@ -95,9 +104,7 @@ ui <- fluidPage(
                      selectInput(
                          "age",
                          "Age",
-                         #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
                          choices= c("Age_under_65", "Age_65_or_older"),
-                         #selected = c("Age_under_65", "Age_65_or_older"),
                          selected = FALSE,
                          multiple=T
                      ),
@@ -105,20 +112,10 @@ ui <- fluidPage(
                      selectInput(
                          "sex",
                          "Sex",
-                         #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
                          choices= c("Women", "Men"),
-                         #selected = c("Women", "Men"),
                          selected = FALSE,
                          multiple=T
                      ),
-                     
-                     #sliderInput(
-                     #    "participation",
-                     #    "Filter participation by",
-                     #    min=0,
-                     #    max=100,
-                     #    value=c(0, 100)
-                     #),
                      
                      radioButtons( 
                          "is_TA_Stratified", 
@@ -180,9 +177,24 @@ ui <- fluidPage(
                      selectInput(
                          "ethnicity_TA_page",
                          "Ethnicity",
-                         #choices=str_to_title(unique(fda_approvals_long$Demographic)), 
                          choices= c("Hispanic", "Non_Hispanic"),
                          selected = c("Hispanic"),
+                         multiple=T
+                     ),
+                     
+                     selectInput(
+                         "age_TA_page",
+                         "Age",
+                         choices= c("Age_under_65", "Age_65_or_older"),
+                         selected = FALSE,
+                         multiple=T
+                     ),
+                     
+                     selectInput(
+                         "sex_TA_page",
+                         "Sex",
+                         choices= c("Women", "Men"),
+                         selected = FALSE,
                          multiple=T
                      ),
                      
@@ -202,30 +214,6 @@ ui <- fluidPage(
                          multiple=FALSE
                      ),
                      
-                     selectInput(
-                         "Stratify_by",
-                         "Stratify by:",
-                         choices = list("None", "Sponsor", "TA_subgroup"),
-                         selected = "None",
-                         multiple = FALSE
-                     ),
-                     
-                     #radioButtons( 
-                     #    "is_Disease_Stratified", 
-                     #    "Stratify by Disease?", 
-                     #    choiceNames=list( "Yes", "No" ), 
-                     #    choiceValues=list(TRUE,FALSE),
-                     #    selected=FALSE
-                     #),
-                     
-                     #radioButtons( 
-                     #    "is_Sponsor_Stratified", 
-                     #    "Stratify by Sponsor?", 
-                     #    choiceNames=list( "Yes", "No" ), 
-                     #    choiceValues=list(TRUE,FALSE),
-                     #    selected=FALSE
-                     #),
-                     
                      radioButtons( 
                          "is_Enrollment_Stratified", 
                          "View Enrollment size?", 
@@ -233,6 +221,21 @@ ui <- fluidPage(
                          choiceValues=list(TRUE,FALSE),
                          selected=FALSE
                      ),
+                     
+                     selectInput(
+                         "Stratify_by",
+                         "Stratify by (Pharma Sponsor, Therapeutic Area subgroup):",
+                         choices = list("None", "Sponsor", "TA_subgroup"),
+                         selected = "None",
+                         multiple = FALSE
+                     ),
+                     
+                     sliderInput("Sponsor_size",
+                                 "(If stratified by Pharma Sponsor) Only show sponsors with >= X approvals:",
+                                 min=1,
+                                 max=3,
+                                 value=1
+                     )
                      
                  ), 
                  mainPanel(
@@ -268,6 +271,11 @@ server <- function(input, output) {
         selection
     })
     
+    # reactive for descriptive statistics
+    approvals_DS <- reactive({
+        selection <- fda_approvals
+    })
+    
     # default no adjustment
     approvals_15_19 <- reactive({
         selection <- fda_approvals %>% filter(Approval_Year != 2020)
@@ -291,8 +299,6 @@ server <- function(input, output) {
         
         # Find unique set of drugs that have participation values in the bounds from input
         drugs <- selection %>% 
-            #filter(Percentage >= input$participation[1]) %>% 
-            #filter(Percentage <= input$participation[2]) %>% 
             group_by(Brand_Name) %>% 
             unique()
         
@@ -301,13 +307,12 @@ server <- function(input, output) {
             filter( Brand_Name %in% drugs$Brand_Name )
         
         selection
+        
     })
     
     # reactive expression for the count chart
     approvals_count <- reactive({
         selection <- fda_approvals_long %>% 
-            #select(-Comparison) %>% 
-            #select(-Compared) %>% 
             filter(Percentage != "NA")
         
         if ( !is.null( input$race ) | !is.null( input$ethnicity ) | !is.null( input$age ) | !is.null( input$sex ) ) {
@@ -317,8 +322,6 @@ server <- function(input, output) {
         if ( !is.null( input$year ) ) {
             selection <- selection %>% filter( Approval_Year %in% input$year )
         }
-        
-        #selection$Approval_Year <- as.character(selection$Approval_Year)
         
         selection <- selection %>% 
             group_by(Brand_Name, Demographic, Percentage, Approval_Year) %>% 
@@ -333,8 +336,6 @@ server <- function(input, output) {
     # reactive expression for the cumulative chart
     approvals_cum_count <- reactive({
         selection <- fda_approvals_long %>% 
-            #select(-Comparison) %>% 
-            #select(-Compared) %>% 
             filter(Percentage != "NA")
         
         if ( !is.null( input$race ) | !is.null( input$ethnicity ) | !is.null( input$age ) | !is.null( input$sex ) ) {
@@ -344,8 +345,6 @@ server <- function(input, output) {
         if ( !is.null( input$year ) ) {
             selection <- selection %>% filter( Approval_Year %in% input$year )
         }
-        
-        #selection$Approval_Year <- as.character(selection$Approval_Year)
         
         selection
     })
@@ -358,27 +357,100 @@ server <- function(input, output) {
             filter(Percentage != "NA") %>% 
             unique()
         
-        if ( !is.null( input$race_TA_page ) | !is.null( input$ethnicity_TA_page ) ) {
-            selection <- selection %>% filter( Demographic %in% input$race_TA_page | Demographic %in% input$ethnicity_TA_page )
+        if ( !is.null( input$race_TA_page ) | !is.null( input$ethnicity_TA_page ) | !is.null( input$age_TA_page ) | !is.null( input$sex_TA_page ) ) {
+            selection <- selection %>% filter( Demographic %in% input$race_TA_page | Demographic %in% input$ethnicity_TA_page | Demographic %in% input$age_TA_page | Demographic %in% input$sex_TA_page)
         }
         
         if ( !is.null( input$year_TA_page ) ) {
             selection <- selection %>% filter( Approval_Year %in% input$year_TA_page )
         }
         
-        if ( "Sponsor" %in% input$Stratify_by ) {
-            sponsors <- sponsors_df
-            selection <- selection %>% filter( Sponsor %in% sponsors$Sponsor )
-        }
-        
         if ( !is.null( input$therapeutic_area ) ) {
             selection <- selection %>% filter( Therapeutic_Area %in% input$therapeutic_area )
+        }
+        
+        if ( "Sponsor" %in% input$Stratify_by ) {
+            
+            # Identify sponsors with > X drugs
+            sponsors <- selection %>% 
+                pivot_wider(names_from = Demographic, values_from = Percentage, values_fill = -1) %>% 
+                select(Sponsor) %>% 
+                group_by(Sponsor) %>% 
+                summarize(Count = n()) %>% 
+                filter(Count >= input$Sponsor_size) %>% 
+                select(Sponsor)
+            
+            selection <- selection %>% filter( Sponsor %in% sponsors$Sponsor )
+            
         }
         
         selection
         
     })
+    
+    output$Approvals_DS <- renderPlot({
+        
+        plot <- approvals_DS() %>% 
+            ggplot(aes(x=Approval_Year)) + 
+            geom_bar(width = 0.7) +
+            geom_text(stat='count', aes(label=..count..), vjust=-1) +
+            xlab("Year") + 
+            ylab("Number of Approvals") +
+            theme(axis.title.x=element_text(size=12, face="bold"), axis.title.y=element_text(size=12, face="bold")) + 
+            scale_x_continuous(breaks = round(seq(min(2015), max(2020), by = 1),1))
+        
+        if ( input$DS_TA_stratify ){
+            plot <- plot + 
+                facet_wrap(~Therapeutic_Area)
 
+        }
+        
+        plot
+        
+    })
+    
+    output$Patients_DS <- renderPlot({
+        
+        plot <- approvals_DS() %>% 
+            ggplot(aes(x=Approval_Year, y=Enrollment)) + 
+            geom_col(width = 0.7) +
+            #geom_text(aes(label= sum(Enrollment)), vjust=-1) +
+            #geom_text(size = 3, position = position_stack(vjust = 0.5)) +
+            xlab("Year") + 
+            ylab("Number of patients enrolled in pivotal clinical trial") +
+            theme(axis.title.x=element_text(size=12, face="bold"), axis.title.y=element_text(size=12, face="bold")) + 
+            scale_x_continuous(breaks = round(seq(min(2015), max(2020), by = 1),1))
+        
+        if ( input$DS_TA_stratify ){
+            plot <- plot + 
+                facet_wrap(~Therapeutic_Area)
+            
+        }
+        
+        plot
+        
+    })
+    
+    output$Enrollment_TA_boxplot_DS <- renderPlot({
+        plot <- approvals_DS() %>% 
+            select(Therapeutic_Area, Enrollment) %>% 
+            filter(Enrollment != "NA") %>% 
+            mutate(Therapeutic_Area = fct_reorder(Therapeutic_Area, Enrollment, .fun='median')) %>%
+            ggplot(aes(Therapeutic_Area, Enrollment)) +
+            geom_boxplot() +
+            geom_jitter() +
+            theme(axis.text.x = element_text(angle=90, size=12, face="bold"), axis.title.y=element_text(size=12, face="bold")) +
+            theme(text = element_text(size=12)) +
+            coord_flip() +
+            xlab("Therapeutic Area") +
+            ylab("Enrollment") +
+            ggtitle("Participants per approval")
+        
+        plot
+        
+    })
+    
+    
     output$Validation_Enrollment_by_TA <- renderPlot({
         
         df <- approvals_15_19() %>% 
@@ -387,7 +459,6 @@ server <- function(input, output) {
             mutate(Therapeutic_Area = case_when(
                 Therapeutic_Area == "Oncology" ~ "Oncology and Hematology", 
                 Therapeutic_Area == "Hematology" ~ "Oncology and Hematology",
-                Therapeutic_Area == "Hematology (Sickle cell)" ~ "Oncology and Hematology",
                 Therapeutic_Area == "Endocrinology and Metabolism" ~ "Endocrinology and Metabolism",
                 Therapeutic_Area == "Infectious Disease" ~ "Infectious Disease",
                 Therapeutic_Area == "Neurology" ~ "Neurology",
@@ -427,7 +498,8 @@ server <- function(input, output) {
             ylim(0,70000) +
             xlab("Therapeutic Area") +
             ylab("Number of Participants") + 
-            theme(text = element_text(size=20)) +
+            #theme(text = element_text(size=20)) +
+            theme(axis.title.x=element_text(size=12, face="bold"), axis.title.y=element_text(size=12, face="bold")) +
             ggtitle("Patient participation by Therapeutic Area [FDA approvals 2015-19]")
         
         Patient_participation_graph
@@ -471,11 +543,14 @@ server <- function(input, output) {
             ylim(0,100) +
             xlab("Race") +
             ylab("Participation") + 
-            theme(text = element_text(size=15), axis.text.x = element_text(size=15)) +
+            #theme(text = element_text(size=15), axis.text.x = element_text(size=15)) +
+            theme(axis.title.x=element_text(size=12, face="bold"), axis.title.y=element_text(size=12, face="bold")) +
             ggtitle("Race distribution of trial participants")
         
         Race_distribution_comparison_graph
     })
+
+    
     
     output$individualPlot <- renderPlotly({
         
@@ -507,48 +582,6 @@ server <- function(input, output) {
         
         ggplotly(plot)
         
-    })
-    
-    output$individualPlot_Violin <- renderPlot({
-        
-        plot <- approvals() %>% 
-            #filter(Percentage >= input$participation[1]) %>% 
-            #filter(Percentage <= input$participation[2]) %>% 
-            ggplot(aes(Demographic, Percentage)) +
-            #geom_jitter(width = 0.2, aes(colour=Demographic)) + 
-            theme(legend.position = "top", legend.title = element_blank()) +
-            scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
-            ggtitle("Distribution of clinical trial participation \n (Red dot = mean. Blue dot = median)")
-        
-        if ( input$is_TA_Stratified ) {
-            plot <- plot + 
-                facet_wrap(~Therapeutic_Area) + 
-                scale_y_continuous(breaks = round(seq(min(0), max(100), by = 10),1))
-        }
-        
-        if ( input$is_Year_labelled ) {
-            plot <- approvals() %>% 
-                #filter(Percentage >= input$participation[1]) %>% 
-                #filter(Percentage <= input$participation[2]) %>% 
-                ggplot(aes(as.factor(Approval_Year), Percentage)) +
-                geom_violin(aes(fill=as.factor(Approval_Year))) +
-                stat_summary(fun=mean, geom="point", color="red") +
-                stat_summary(fun=median, geom="point", color="blue") +
-                facet_wrap(~Demographic) +
-                xlab("Approval Year") +
-                theme(legend.position = "top", legend.title = element_blank()) +
-                scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
-                ggtitle("Distribution of clinical trial participation \n (Red dot = mean. Blue dot = median)")
-            #plot <- plot + geom_jitter(width = 0.2, aes(colour=Approval_Year))
-        }
-        else{
-            plot <- plot + geom_violin(aes(fill=Demographic))
-            plot <- plot + stat_summary(fun=mean, geom="point", color="red")
-            plot <- plot + stat_summary(fun=median, geom="point", color="blue")
-            #plot <- plot + geom_jitter(width = 0.2, aes(colour=Demographic))
-        }
-        
-        plot
     })
     
     output$stats_summary_Table <- DT::renderDataTable(
@@ -588,10 +621,8 @@ server <- function(input, output) {
             group_by(Demographic, Percentage) %>% 
             summarize(Count = sum(Count)) %>% 
             filter(Percentage <= 25) %>%
-            #filter(Percentage >= input$participation[1]) %>% 
-            #filter(Percentage <= input$participation[2]) %>% 
-            ggplot(aes(Percentage, y=Count, width=1)) +
-            geom_bar(stat = "identity", position = 'dodge') +
+            ggplot(aes(Percentage, y=Count)) +
+            geom_bar(stat = "identity", position = 'dodge', width = 0.8) +
             geom_text(aes(label=Count), position = position_dodge(0.9), vjust=-0.3, size=3) +
             ylim(0,65) +
             scale_x_continuous(breaks = round(seq(0, 25, by = 1),1)) +
@@ -628,9 +659,6 @@ server <- function(input, output) {
     
     output$approvalsTable <- DT::renderDataTable(
         approvals() %>% 
-            #select(-Enrollment_bucket) %>% 
-            #filter(Percentage >= input$participation[1]) %>% 
-            #filter(Percentage <= input$participation[2]) %>%
             pivot_wider(names_from = Demographic, values_from = Percentage), options=list(pageLength=10)
     )
     
@@ -695,7 +723,6 @@ server <- function(input, output) {
         #names(Race_distribution_comparison) <- c("Race", "FDA_Snapshots", "Our_Database")
         
         #df %>% 
-            
         
     })
     
