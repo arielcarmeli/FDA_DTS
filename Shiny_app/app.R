@@ -46,13 +46,23 @@ ui <- fluidPage(
         tabPanel("Descriptive Statistics",
             sidebarLayout(
                 sidebarPanel(
+                    
+                    #radioButtons( 
+                    #    "2020_inclusion", 
+                    #    "Include 2020 data in all graphs?", 
+                    #    choiceNames=list( "Yes", "No" ), 
+                    #    choiceValues=list(TRUE,FALSE),
+                    #    selected=FALSE
+                    #),
+                    
                     radioButtons( 
                         "DS_TA_stratify", 
                         "Stratify by Therapeutic Area?", 
                         choiceNames=list( "Yes", "No" ), 
                         choiceValues=list(TRUE,FALSE),
                         selected=FALSE
-                    )
+                    ),
+                    width = 3
                 ),
                          
                 mainPanel(
@@ -63,7 +73,7 @@ ui <- fluidPage(
                     
                     h2("Demographics of Trial Participation"),
                     tags$a(href = "https://www.fda.gov/media/143592/download", "This graph recreates page 9 in 2015-19 DTS report"),
-                    plotOutput("Validation_Demographics", height=300, width = 1000),
+                    plotOutput("Validation_Demographics", height=175, width = 1000),
                     
                     h2("Total approvals by Year"),
                     plotOutput("Approvals_DS", height=450, width = 1000),
@@ -231,11 +241,12 @@ ui <- fluidPage(
                      ),
                      
                      sliderInput("Sponsor_size",
-                                 "(If stratified by Pharma Sponsor) Only show sponsors with >= X approvals:",
+                                 "(If stratified by Pharma Sponsor) Show sponsors with >= approvals",
                                  min=1,
                                  max=3,
                                  value=1
-                     )
+                     ),
+                     width = 3
                      
                  ), 
                  mainPanel(
@@ -447,7 +458,7 @@ server <- function(input, output) {
             ggplot(aes(Therapeutic_Area, Enrollment)) +
             geom_boxplot() +
             geom_jitter() +
-            theme(axis.text.x = element_text(angle=90, size=12, face="bold"), axis.title.y=element_text(size=12, face="bold")) +
+            theme(axis.title.x = element_text(size=12, face="bold"), axis.title.y=element_text(size=12, face="bold")) +
             theme(text = element_text(size=12)) +
             coord_flip() +
             xlab("Therapeutic Area") +
@@ -599,6 +610,8 @@ server <- function(input, output) {
             expand_limits(y=c(0, 100)) +
             theme(axis.title.x=element_text(size=12, face="bold"), axis.title.y=element_text(size=12, face="bold")) + 
             facet_wrap(~Demographic, scales = "free") +
+            xlab("") +
+            ylab("% Participation") +
             ggtitle("Demographics of Trial Participation [FDA approvals 2015-19; excludes 2020 for purposes of dataset validation]")
         
         demographic_participation_graph

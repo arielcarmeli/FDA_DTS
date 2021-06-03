@@ -162,3 +162,22 @@ demographic_participation_graph
 
 ```
 
+### Explore averages
+
+```{r}
+
+trash <- fda_approvals %>% 
+  filter(Approval_Year == 2019) %>% 
+  filter(Hispanic != "NA") %>% 
+  select(Brand_Name, Approval_Year, Enrollment, Hispanic)
+
+mean(trash$Hispanic)
+trash <- trash %>% 
+  mutate(SumProd = Enrollment * Hispanic / 100)
+sum(trash$SumProd) / sum(trash$Enrollment)
+
+
+```
+
+
+
