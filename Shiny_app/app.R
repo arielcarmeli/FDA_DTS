@@ -59,17 +59,17 @@ ui <- fluidPage(
                  
                     h2("Total enrollment by Therapeutic Area"),
                     tags$a(href = "https://www.fda.gov/media/143592/download", "This graph recreates page 30 in 2015-19 DTS report"),
-                    plotOutput("Validation_Enrollment_by_TA", height=350, width = 1000),
+                    plotOutput("Validation_Enrollment_by_TA", height=300, width = 1000),
                     
                     h2("Demographics of Trial Participation"),
                     tags$a(href = "https://www.fda.gov/media/143592/download", "This graph recreates page 9 in 2015-19 DTS report"),
-                    plotOutput("Validation_Demographics", height=200, width = 400),
+                    plotOutput("Validation_Demographics", height=300, width = 1000),
                     
                     h2("Total approvals by Year"),
-                    plotOutput("Approvals_DS", height=350, width = 1000),
+                    plotOutput("Approvals_DS", height=450, width = 1000),
                     
                     h2("Total patients by Year"),
-                    plotOutput("Patients_DS", height=350, width = 1000),
+                    plotOutput("Patients_DS", height=450, width = 1000),
                     
                     h2("Enrollment by Therapeutic Area"),
                     plotOutput("Enrollment_TA_boxplot_DS", height=300, width = 1000),
@@ -396,12 +396,18 @@ server <- function(input, output) {
             xlab("Year") + 
             ylab("Number of Approvals") +
             theme(axis.title.x=element_text(size=12, face="bold"), axis.title.y=element_text(size=12, face="bold")) + 
-            scale_x_continuous(breaks = round(seq(min(2015), max(2020), by = 1),1))
+            scale_x_continuous(breaks = round(seq(min(2015), max(2020), by = 1),1)) #+ 
+            #expand_limits(y=c(0, 70))
         
         if ( input$DS_TA_stratify ){
             plot <- plot + 
-                facet_wrap(~Therapeutic_Area)
+                facet_wrap(~Therapeutic_Area) +
+                expand_limits(y=c(0, 30))
 
+        }
+        
+        else{
+            plot <- plot + expand_limits(y=c(0, 70))
         }
         
         plot
@@ -419,11 +425,13 @@ server <- function(input, output) {
             xlab("Year") + 
             ylab("Number of patients enrolled in pivotal clinical trial") +
             theme(axis.title.x=element_text(size=12, face="bold"), axis.title.y=element_text(size=12, face="bold")) + 
-            scale_x_continuous(breaks = round(seq(min(2015), max(2020), by = 1),1))
+            scale_x_continuous(breaks = round(seq(min(2015), max(2020), by = 1),1)) #+ 
+            #expand_limits(y=c(0, 70))
         
         if ( input$DS_TA_stratify ){
             plot <- plot + 
-                facet_wrap(~Therapeutic_Area)
+                facet_wrap(~Therapeutic_Area) #+ 
+                #expand_limits(y=c(0, 40))
             
         }
         
@@ -495,13 +503,13 @@ server <- function(input, output) {
             geom_bar(stat = "identity", position = 'dodge') +
             geom_text(aes(label=Participants), position = position_dodge(0.9), hjust=-0.2, size=4) +
             coord_flip() + 
-            ylim(0,70000) +
+            expand_limits(y=c(0, 70000)) +
             xlab("Therapeutic Area") +
             ylab("Number of Participants") + 
-            scale_y_continuous(breaks = round(seq(min(0), max(70000), by = 5000),5)) +
+            scale_y_continuous(breaks = round(seq(min(0), max(70000), by = 5000),1)) +
             #theme(text = element_text(size=20)) +
             theme(axis.title.x=element_text(size=12, face="bold"), axis.title.y=element_text(size=12, face="bold")) +
-            ggtitle("Patient participation by Therapeutic Area [FDA approvals 2015-19]")
+            ggtitle("Patient enrollment by Therapeutic Area [FDA approvals 2015-19; excludes 2020 for purposes of dataset validation]")
         
         Patient_participation_graph
         
@@ -512,17 +520,17 @@ server <- function(input, output) {
         
         # Race
         
-        global_black_participation <- approvals_15_19 %>% 
+        global_black_participation <- approvals_15_19() %>% 
             select(Brand_Name, Enrollment, Black) %>% 
             filter(Black != "NA") %>% 
             mutate(Black_participants = (Black/100) * Enrollment)
         
-        global_white_participation <- approvals_15_19 %>% 
+        global_white_participation <- approvals_15_19() %>% 
             select(Brand_Name, Enrollment, White) %>% 
             filter(White != "NA") %>% 
             mutate(White_participants = (White/100) * Enrollment)
         
-        global_asian_participation <- approvals_15_19 %>% 
+        global_asian_participation <- approvals_15_19() %>% 
             select(Brand_Name, Enrollment, Asian) %>% 
             filter(Asian != "NA") %>% 
             mutate(Asian_participants = (Asian/100) * Enrollment)
@@ -536,16 +544,16 @@ server <- function(input, output) {
         
         races <- c("Asian", "Black", "White")
         race_participation <- data.frame("Race", races, race_participation)
-        names(ace_participation) <- c("Demographic", "Category", "Value")
+        names(race_participation) <- c("Demographic", "Category", "Value")
         
         # Sex
         
-        global_female_participation <- approvals_15_19 %>% 
+        global_female_participation <- approvals_15_19() %>% 
             select(Brand_Name, Enrollment, Female) %>% 
             filter(Female != "NA") %>% 
             mutate(Female_participants = (Female/100) * Enrollment)
         
-        global_male_participation <- approvals_15_19 %>%
+        global_male_participation <- approvals_15_19() %>%
             select(Brand_Name, Enrollment, Male) %>% 
             filter(Male != "NA") %>% 
             mutate(Male_participants = (Male/100) * Enrollment)
@@ -561,12 +569,12 @@ server <- function(input, output) {
         
         # Age
         
-        global_Age_under_65_participation <- approvals_15_19 %>% 
+        global_Age_under_65_participation <- approvals_15_19() %>% 
             select(Brand_Name, Enrollment, Age_under_65) %>% 
             filter(Age_under_65 != "NA") %>% 
             mutate(Age_under_65_participants = (Age_under_65/100) * Enrollment)
         
-        global_Age_65_or_older_participation <- approvals_15_19 %>%
+        global_Age_65_or_older_participation <- approvals_15_19() %>%
             select(Brand_Name, Enrollment, Age_65_or_older) %>% 
             filter(Age_65_or_older != "NA") %>% 
             mutate(Age_65_or_older_participants = (Age_65_or_older/100) * Enrollment)
@@ -589,7 +597,9 @@ server <- function(input, output) {
             geom_col(width = 0.5) + 
             geom_text(aes(label = Value), position = position_dodge(0.9), vjust=-0.4, size=4) +
             expand_limits(y=c(0, 100)) +
-            facet_wrap(~Demographic, scales = "free")
+            theme(axis.title.x=element_text(size=12, face="bold"), axis.title.y=element_text(size=12, face="bold")) + 
+            facet_wrap(~Demographic, scales = "free") +
+            ggtitle("Demographics of Trial Participation [FDA approvals 2015-19; excludes 2020 for purposes of dataset validation]")
         
         demographic_participation_graph
         
