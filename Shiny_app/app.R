@@ -24,11 +24,11 @@ fda_approvals$United_States <- as.numeric(as.character(fda_approvals$United_Stat
 
 # Add columns for non-hispanic, Men, Age under 65 
 fda_approvals <- fda_approvals %>% mutate(Non_Hispanic = 100 - Hispanic, .after = Hispanic)
-fda_approvals <- fda_approvals %>% mutate(Men = 100 - Women, .after = Women)
+fda_approvals <- fda_approvals %>% mutate(Male = 100 - Female, .after = Female)
 fda_approvals <- fda_approvals %>% mutate(Age_under_65 = 100 - Age_65_or_older, .after = Age_65_or_older)
 
 # Create longer version, for plotting
-fda_approvals_long <- pivot_longer(fda_approvals, cols = Women:Age_80_or_older, names_to = "Demographic", values_to = "Percentage")
+fda_approvals_long <- pivot_longer(fda_approvals, cols = Female:Age_80_or_older, names_to = "Demographic", values_to = "Percentage")
 
 # Change class type of variable in long
 fda_approvals_long$Percentage <- as.numeric(as.character(fda_approvals_long$Percentage))
@@ -112,7 +112,7 @@ ui <- fluidPage(
                      selectInput(
                          "sex",
                          "Sex",
-                         choices= c("Women", "Men"),
+                         choices= c("Female", "Male"),
                          selected = FALSE,
                          multiple=T
                      ),
@@ -193,7 +193,7 @@ ui <- fluidPage(
                      selectInput(
                          "sex_TA_page",
                          "Sex",
-                         choices= c("Women", "Men"),
+                         choices= c("Female", "Male"),
                          selected = FALSE,
                          multiple=T
                      ),
@@ -413,6 +413,7 @@ server <- function(input, output) {
         plot <- approvals_DS() %>% 
             ggplot(aes(x=Approval_Year, y=Enrollment)) + 
             geom_col(width = 0.7) +
+            #geom_text(aes(label = Enrollment)) +
             #geom_text(aes(label= sum(Enrollment)), vjust=-1) +
             #geom_text(size = 3, position = position_stack(vjust = 0.5)) +
             xlab("Year") + 
@@ -507,50 +508,91 @@ server <- function(input, output) {
     })
     
     output$Validation_Demographics <- renderPlot({
-        global_black_participation <- approvals_15_19() %>% 
+        ## To account for missing data, we capture % representation of each demographic only in trials where that demographic is captured
+        
+        # Race
+        
+        global_black_participation <- approvals_15_19 %>% 
             select(Brand_Name, Enrollment, Black) %>% 
             filter(Black != "NA") %>% 
             mutate(Black_participants = (Black/100) * Enrollment)
         
-        global_white_participation <- approvals_15_19() %>% 
+        global_white_participation <- approvals_15_19 %>% 
             select(Brand_Name, Enrollment, White) %>% 
             filter(White != "NA") %>% 
             mutate(White_participants = (White/100) * Enrollment)
         
-        global_asian_participation <- approvals_15_19() %>% 
+        global_asian_participation <- approvals_15_19 %>% 
             select(Brand_Name, Enrollment, Asian) %>% 
             filter(Asian != "NA") %>% 
             mutate(Asian_participants = (Asian/100) * Enrollment)
         
-        demographic_participation <- c(round(sum(100 * global_asian_participation$Asian_participants) /
-                                                 sum(global_asian_participation$Enrollment), 0), 
-                                       round(sum(100 * global_black_participation$Black_participants) / 
-                                                 sum(global_black_participation$Enrollment), 0),
-                                       round(sum(100 * global_white_participation$White_participants) / 
-                                                 sum(global_white_participation$Enrollment), 0))
+        race_participation <- c(round(sum(100 * global_asian_participation$Asian_participants) /
+                                          sum(global_asian_participation$Enrollment), 0), 
+                                round(sum(100 * global_black_participation$Black_participants) / 
+                                          sum(global_black_participation$Enrollment), 0),
+                                round(sum(100 * global_white_participation$White_participants) / 
+                                          sum(global_white_participation$Enrollment), 0))
         
-        #fda_snapshots <- c(11, 7, 76)
         races <- c("Asian", "Black", "White")
+        race_participation <- data.frame("Race", races, race_participation)
+        names(ace_participation) <- c("Demographic", "Category", "Value")
         
-        #Race_distribution_comparison <- data.frame(races, fda_snapshots, demographic_participation)
-        #names(Race_distribution_comparison) <- c("Race", "FDA_Snapshots", "Our_Database")
+        # Sex
         
-        Race_distribution_comparison <- data.frame(races, demographic_participation)
-        names(Race_distribution_comparison) <- c("Race", "Our_Database")
+        global_female_participation <- approvals_15_19 %>% 
+            select(Brand_Name, Enrollment, Female) %>% 
+            filter(Female != "NA") %>% 
+            mutate(Female_participants = (Female/100) * Enrollment)
         
-        Race_distribution_comparison_graph <- Race_distribution_comparison %>% 
-            pivot_longer(cols = Our_Database, names_to = "Database", values_to = "Participation") %>% 
-            ggplot(aes(Race, Participation, width = 0.5)) + #, fill = Database)) +
-            geom_bar(stat = "identity", position = 'dodge') +
-            geom_text(aes(label=Participation), position = position_dodge(0.9), vjust=-0.3, size=6) +
-            ylim(0,100) +
-            xlab("Race") +
-            ylab("Participation") + 
-            #theme(text = element_text(size=15), axis.text.x = element_text(size=15)) +
-            theme(axis.title.x=element_text(size=12, face="bold"), axis.title.y=element_text(size=12, face="bold")) +
-            ggtitle("Race distribution of trial participants")
+        global_male_participation <- approvals_15_19 %>%
+            select(Brand_Name, Enrollment, Male) %>% 
+            filter(Male != "NA") %>% 
+            mutate(Male_participants = (Male/100) * Enrollment)
         
-        Race_distribution_comparison_graph
+        sex_participation <- c(round(sum(100 * global_female_participation$Female_participants) /
+                                         sum(global_female_participation$Enrollment), 0), 
+                               round(sum(100 * global_male_participation$Male_participants) / 
+                                         sum(global_male_participation$Enrollment), 0))
+        
+        sexes <- c("Female", "Male")
+        sex_participation <- data.frame("Sex", sexes, sex_participation)
+        names(sex_participation) <- c("Demographic", "Category", "Value")
+        
+        # Age
+        
+        global_Age_under_65_participation <- approvals_15_19 %>% 
+            select(Brand_Name, Enrollment, Age_under_65) %>% 
+            filter(Age_under_65 != "NA") %>% 
+            mutate(Age_under_65_participants = (Age_under_65/100) * Enrollment)
+        
+        global_Age_65_or_older_participation <- approvals_15_19 %>%
+            select(Brand_Name, Enrollment, Age_65_or_older) %>% 
+            filter(Age_65_or_older != "NA") %>% 
+            mutate(Age_65_or_older_participants = (Age_65_or_older/100) * Enrollment)
+        
+        age_participation <- c(round(sum(100 * global_Age_under_65_participation$Age_under_65_participants) /
+                                         sum(global_Age_under_65_participation$Enrollment), 0), 
+                               round(sum(100 * global_Age_65_or_older_participation$Age_65_or_older_participants) / 
+                                         sum(global_Age_65_or_older_participation$Enrollment), 0))
+        
+        ages <- c("Age_under_65", "Age_65_or_older")
+        age_participation <- data.frame("Age", ages, age_participation)
+        names(age_participation) <- c("Demographic", "Category", "Value")
+        
+        # Combine the tables
+        demographic_participation <- rbind(age_participation, sex_participation, race_participation)
+        
+        
+        demographic_participation_graph <- demographic_participation %>% 
+            ggplot(aes(x = Category, y = Value)) +
+            geom_col(width = 0.5) + 
+            geom_text(aes(label = Value), position = position_dodge(0.9), vjust=-0.4, size=4) +
+            expand_limits(y=c(0, 100)) +
+            facet_wrap(~Demographic, scales = "free")
+        
+        demographic_participation_graph
+        
     })
 
     

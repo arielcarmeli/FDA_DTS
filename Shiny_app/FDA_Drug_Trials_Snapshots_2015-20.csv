@@ -1,4 +1,4 @@
-﻿Brand_Name,Sponsor,Therapeutic_Area,TA Notes,TA_subgroup,Indication,Indication_long,Approval_Year,Enrollment,Sex_comparison,Race_comparison,Age_comparison,Race_detail,Women,White,Black,Asian,Hispanic,Other,Age_65_or_older,Age_75_or_older,Age_80_or_older,United_States,FDA_provided_TA
+﻿Brand_Name,Sponsor,Therapeutic_Area,TA Notes,TA_subgroup,Indication,Indication_long,Approval_Year,Enrollment,Sex_comparison,Race_comparison,Age_comparison,Race_detail,Female,White,Black,Asian,Hispanic,Other,Age_65_or_older,Age_75_or_older,Age_80_or_older,United_States,FDA_provided_TA
 ADDYI,Sprout Pharmaceuticals,Gynecology,,Gynecology,Hypoactive sexual desire disorder,"Treatment of acquired, generalized hypoactive sexual desire disorder (HSDD) in premenopausal women ",2015,3099,,,,,100,89,8,1,,2,0,0,0,,No. Dr. Bierer reviewed TA label
 ALECENSA,Genentech,Oncology,,NSCLC,NSCLC,For the treatment of metastatic non-small cell lung cancer ,2015,253,,,,,55,74,2,18,,7,14,4,1,,Yes
 ARISTADA,Alkermes Inc,Psychiatry,,Schizophrenia,Schizophrenia,Treatment of schizophrenia ,2015,623,,,,,32,47,40,13,,1,0,0,0,,Yes
@@ -33,12 +33,12 @@ ODOMZO,Novartis,Oncology,,Melanoma,Melanoma,Treatment of locally advanced basal 
 ORKAMBI,Vertex,Pulmonology and Rheumatology,,Cystic fibrosis,Cystic fibrosis,Treatment of cystic fibrosis ,2015,1108,,,,,49,99,0,0,,1,0,0,0,,No. Dr. Bierer reviewed TA label
 PORTRAZZA,Eli Lilly,Oncology,,NSCLC,NSCLC,For the treatment of metastatic squamous non-small cell lung cancer ,2015,1093,,,,,17,84,1,8,,8,39,4,1,,Yes
 PRALUENT,Sanofi,Cardiovascular Diseases,,Hyperlipidemia,Hyperlipidemia,Treatment of certain patients with high cholesterol ,2015,3752,,,,,40,90,4,3,,3,32,6,1,,Yes
-PRAXBIND,Boehringer-Ingelheim,Cardiovascular Diseases,(or Hematology),Other Cardiovascular Disease,Reversal of the anticoagulant effects of Pradaxa,Reversal of the anticoagulant effects of Pradaxa during emergency situations or when there is a need to reverse its blood-thinning effects. ,2015,123,,,,,47,85,1,7,,7,90,60,44,,Yes
+PRAXBIND,Boehringer-Ingelheim,Cardiovascular Diseases,,Other Cardiovascular Disease,Reversal of the anticoagulant effects of Pradaxa,Reversal of the anticoagulant effects of Pradaxa during emergency situations or when there is a need to reverse its blood-thinning effects. ,2015,123,,,,,47,85,1,7,,7,90,60,44,,Yes
 REPATHA-1,Amgen,Cardiovascular Diseases,,Hyperlipidemia,Hyperlipidemia,Treatment of certain patients with high cholesterol - Patients with Clinical Atherosclerotic Cardiovascular Disease or HeFH,2015,4177,,,,,50,84,5,9,,2,28,3,1,,Yes
 REPATHA-2,Amgen,Cardiovascular Diseases,,Hyperlipidemia,Hyperlipidemia,Treatment of certain patients with high cholesterol - Patients with HoFH,2015,49,,,,,49,90,0,4,,6,0,0,0,,Yes
 REXULTI-1,Otsuka,Psychiatry,,Schizophrenia,Schizophrenia,Treatment of schizophrenia ,2015,852,,,,,37,63,24,7,,6,1,0,0,,Yes
 REXULTI-2,Otsuka,Psychiatry,,Major depressive disorder,Major depressive disorder,Treatment of major depressive disorder ,2015,1054,,,,,69,85,12,1,,2,1,0,0,,Yes
-SAVAYSA-1,Daiichi Sankyo,Cardiovascular Diseases,(or Hematology),Other Cardiovascular Disease,Venous thromboembolism,Reduction of risk of venous thromboembolism (VTE) in patients with previous VTE ,2015,8292,,,,,43,70,4,21,,5,33,13,6,,Yes
+SAVAYSA-1,Daiichi Sankyo,Cardiovascular Diseases,,Other Cardiovascular Disease,Venous thromboembolism,Reduction of risk of venous thromboembolism (VTE) in patients with previous VTE ,2015,8292,,,,,43,70,4,21,,5,33,13,6,,Yes
 SAVAYSA-2,Daiichi Sankyo,Cardiovascular Diseases,,Other Cardiovascular Disease,Prevention of stroke,Prevention of stroke in patients with atrial fibrillation ,2015,21026,,,,,38,81,1,14,,4,74,40,17,,Yes
 STRENSIQ-1,Alexion,Endocrinology and Metabolism,,Hypophosphatasia,Hypophosphatasia,"Treatment of perinatal, infantile -onset hypophosphatasia (HPP) ",2015,79,,,,,52,81,0,9,,10,0,0,0,,No. Dr. Bierer reviewed TA label
 STRENSIQ-2,Alexion,Endocrinology and Metabolism,,Hypophosphatasia,Hypophosphatasia,Treatment of juvenile-onset hypophosphatasia (HPP) ,2015,20,,,,,50,95,0,0,,5,0,0,0,,No. Dr. Bierer reviewed TA label
