@@ -143,9 +143,6 @@ demographic_participation_graph
 
 ```{r}
 
-
-
-
 demographic_participation_graph <- demographic_participation %>% 
     pivot_longer(cols = Value, names_to = "Database", values_to = "Participation") %>% 
     ggplot(aes(Race, Participation, width = 0.5)) + #, fill = Database)) +
@@ -244,6 +241,23 @@ summary_statistics_all_years %>% filter(Demographic %in% demographics_selected$D
 
 ```
 
+
+```{r}
+
+dems <- c("White", "Black", "Asian")
+
+#changes <-  %>% filter(Demographic %in% dems)
+
+fda_approvals_long %>% 
+  filter(Demographic %in% dems) %>% 
+  filter(Percentage != "NA") %>% 
+  ggplot(aes(x = Demographic, y = Percentage, fill = factor(Approval_Year))) +
+  geom_boxplot(outlier.shape = NA)# +
+  #geom_point(position=position_jitterdodge(),alpha=0.3)
+  #geom_jitter(width=0.1,alpha=0.2)# +
+  #facet_wrap(~Demographic)
+
+```
 
 
 

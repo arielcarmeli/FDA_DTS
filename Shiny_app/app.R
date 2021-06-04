@@ -228,12 +228,13 @@ ui <- fluidPage(
                      h2("How consistent is diversity in FDA approvals?"),
                      plotlyOutput("individualPlot", height=700),
                      DT::dataTableOutput("stats_summary_Table"),
+
                      #h2("How many FDA approvals have under 25% of a demographic in its trials?"),
                      plotOutput("participationCountPlot", height=700),
                      
                      h2("Has diversity in clinical trials improved from 2015-2020?"),
-                     plotOutput("cum_participationCountPlot", height=700),
-                     
+                     plotOutput("change_over_time", height=400),
+
                      h2("Approval Details"),
                      DT::dataTableOutput("approvalsTable"),
                  )
@@ -714,13 +715,15 @@ server <- function(input, output) {
         
         if ( input$is_Year_labelled ) {
             plot <- plot + 
-                geom_jitter(width = 0.2, aes(colour=Approval_Year))
-                #scale_color_brewer(palette="Greys")
+                geom_jitter(width = 0.2, aes(colour=factor(Approval_Year))) +
+                scale_color_brewer(palette="PuRd")
         }
         else{
-            plot <- plot + geom_jitter(width = 0.2, aes(colour=Demographic))
+            plot <- plot + 
+                geom_jitter(width = 0.2, aes(colour=Demographic))
+                
         }
-        
+    
         ggplotly(plot)
         
     })
@@ -789,27 +792,18 @@ server <- function(input, output) {
         plot
     })
     
-    output$cum_participationCountPlot <- renderPlot({
+    output$change_over_time <- renderPlot({
         
-        plot <- approvals_cum_count() %>%
-            ggplot(aes(Percentage/100, colour = factor(Approval_Year))) + stat_ecdf(geom = "step") +
-            scale_x_continuous(breaks = round(seq(min(0), max(1), by = 0.05),2)) +
-            scale_y_continuous(breaks = round(seq(min(0), max(1), by = 0.05),2)) +
-            theme(axis.title.x = element_text(size=15), 
-                  axis.title.y = element_text(size=15),
-                  axis.text.x = element_text(size=8),
-                  axis.text.y = element_text(size=8),
-                  title = element_text(size=15),
-                  legend.text=element_text(size=20), 
-                  legend.position = "top", 
-                  legend.title = element_blank()
-            ) +
-            facet_wrap(~Demographic, ncol = 2) + 
-            ylab("Cumulative percentage of FDA approvals") +
-            xlab("Representation in clinical trials") +
-            ggtitle("Cumulative distribution of Demographic participation in trials by year")
+        plot <- approvals() %>% 
+            #filter(Demographic %in% dems) %>% 
+            filter(Percentage != "NA") %>% 
+            ggplot(aes(x = Demographic, y = Percentage, fill = factor(Approval_Year))) +
+            geom_boxplot(outlier.shape = NA) +
+            scale_fill_brewer(palette="PuRd")
+            #geom_point(position=position_jitterdodge(),alpha=0.3)
         
         plot
+        
     })
     
     output$approvalsTable <- DT::renderDataTable(
