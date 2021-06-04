@@ -225,16 +225,18 @@ ui <- fluidPage(
                      
                  mainPanel(
                      
-                     h2("How consistent is diversity in FDA approvals?"),
-                     plotlyOutput("individualPlot", height=700),
+                     h2("Distribution of Participation by Demographic in Clinical Trials Across FDA approvals"),
+                     h6("Each dot represents a pivotal clinical trial for 1 FDA approval"),
+                     plotlyOutput("individualPlot", height=700, width = 1200),
+                     
+                     h2("Trend in Participation by Demographic Over Time"),
+                     plotOutput("change_over_time", height=700, width = 1200),
+                     
                      DT::dataTableOutput("stats_summary_Table"),
 
                      #h2("How many FDA approvals have under 25% of a demographic in its trials?"),
                      plotOutput("participationCountPlot", height=700),
                      
-                     h2("Has diversity in clinical trials improved from 2015-2020?"),
-                     plotOutput("change_over_time", height=400),
-
                      h2("Approval Details"),
                      DT::dataTableOutput("approvalsTable"),
                  )
@@ -692,8 +694,6 @@ server <- function(input, output) {
         
     })
 
-    
-    
     output$individualPlot <- renderPlotly({
         
         plot <- approvals() %>% 
@@ -705,7 +705,8 @@ server <- function(input, output) {
             #geom_jitter(width = 0.2, aes(colour=Demographic)) + 
             theme(legend.position = "top", legend.title = element_blank()) +
             scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
-            ggtitle("Distribution of clinical trial participation")
+            theme(axis.title.x=element_text(size=12, face="bold"), axis.title.y=element_text(size=12, face="bold"))
+            #ggtitle("Distribution of clinical trial participation")
         
         if ( input$is_TA_Stratified ) {
             plot <- plot + 
@@ -782,8 +783,10 @@ server <- function(input, output) {
             ggplot(aes(Percentage, y=Count)) +
             geom_bar(stat = "identity", position = 'dodge', width = 0.8) +
             geom_text(aes(label=Count), position = position_dodge(0.9), vjust=-0.3, size=3) +
-            ylim(0,65) +
+            #ylim(0,65) +
+            expand_limits(y=c(0, 65)) +
             scale_x_continuous(breaks = round(seq(0, 25, by = 1),1)) +
+            theme(axis.title.x=element_text(size=12, face="bold"), axis.title.y=element_text(size=12, face="bold")) + 
             xlab("Percent participation in trials for FDA approval") +
             ylab("Number of FDA approvals") +
             ggtitle("Number of FDA approvals with under 25 percent participation by demographic in its trials") +
@@ -799,8 +802,14 @@ server <- function(input, output) {
             filter(Percentage != "NA") %>% 
             ggplot(aes(x = Demographic, y = Percentage, fill = factor(Approval_Year))) +
             geom_boxplot(outlier.shape = NA) +
-            scale_fill_brewer(palette="PuRd")
-            #geom_point(position=position_jitterdodge(),alpha=0.3)
+            scale_fill_brewer(palette="PuRd")+
+            geom_point(position=position_jitterdodge(),alpha=0.1) +
+            scale_y_continuous(breaks = round(seq(0, 100, by = 10),1))
+        
+        if ( input$is_TA_Stratified ) {
+            plot <- plot + 
+                facet_wrap(~Therapeutic_Area, scales = "free")
+        }
         
         plot
         
