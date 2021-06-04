@@ -123,7 +123,7 @@ ui <- fluidPage(
                         choiceValues=list(TRUE,FALSE),
                         selected=FALSE
                     ),
-                    width = 3
+                    width = 2
                 ),
                          
                 mainPanel(
@@ -218,7 +218,7 @@ ui <- fluidPage(
                          selected=FALSE
                      )#,
                      
-                     , width = 3
+                     , width = 2
                      
                      #textOutput("summaryText")
                  ),
@@ -228,13 +228,17 @@ ui <- fluidPage(
                      h2("Distribution of Participation by Demographic in Clinical Trials Across FDA approvals"),
                      h6("Each dot represents a pivotal clinical trial for 1 FDA approval"),
                      plotlyOutput("individualPlot", height=700, width = 1200),
-                     
-                     h2("Trend in Participation by Demographic Over Time"),
-                     plotOutput("change_over_time", height=700, width = 1200),
-                     
-                     DT::dataTableOutput("stats_summary_Table"),
 
-                     #h2("How many FDA approvals have under 25% of a demographic in its trials?"),
+                     h2("Data Table: Median and Average of Clinical Trial Participation"),                     
+                     DT::dataTableOutput("stats_summary_Table"),
+                                          
+                     h2("Trend in Clinical Trial Participation by Demographic Over Time"),
+                     h6("Boxplots represents 5 points in the distribution: Middle line is median. 
+                        Ends of the box are 1st and 3rd quartile.
+                        Ends of the whiskers are 1.5 * inter-quartile range from the closer of 1st or 3rd quartile"),
+                     plotOutput("change_over_time", height = 700),
+
+                     h2("Count of FDA Approvals Per Participation in Clinical Trials"),
                      plotOutput("participationCountPlot", height=700),
                      
                      h2("Approval Details"),
@@ -316,7 +320,7 @@ ui <- fluidPage(
                                  max=3,
                                  value=1
                      ),
-                     width = 3
+                     width = 2
                      
                  ), 
                  mainPanel(
@@ -702,10 +706,15 @@ server <- function(input, output) {
                                                              "<br>Drug:", Brand_Name, 
                                                              "<br>Sponsor:", Sponsor
                                                              ))) +
-            #geom_jitter(width = 0.2, aes(colour=Demographic)) + 
-            theme(legend.position = "top", legend.title = element_blank()) +
             scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
-            theme(axis.title.x=element_text(size=12, face="bold"), axis.title.y=element_text(size=12, face="bold"))
+            theme(axis.text.x = element_text(size=8),
+                  axis.text.y = element_text(size=8),
+                  axis.title.x=element_text(size=12, face="bold"),
+                  axis.title.y=element_text(size=12, face="bold"))
+            #geom_jitter(width = 0.2, aes(colour=Demographic)) + 
+            #theme(legend.position = "top")+#, legend.title = element_blank()) +
+             #+
+            #theme(axis.title.x=element_text(size=12, face="bold"), axis.title.y=element_text(size=12, face="bold"))
             #ggtitle("Distribution of clinical trial participation")
         
         if ( input$is_TA_Stratified ) {
@@ -724,8 +733,11 @@ server <- function(input, output) {
                 geom_jitter(width = 0.2, aes(colour=Demographic))
                 
         }
+        
+        #plot <- plot + theme(legend.position = "top")
     
-        ggplotly(plot)
+        ggplotly(plot) %>% 
+            layout(legend = list(orientation = "h", y = 1.1, x = 0.03))
         
     })
     
@@ -787,9 +799,9 @@ server <- function(input, output) {
             expand_limits(y=c(0, 65)) +
             scale_x_continuous(breaks = round(seq(0, 25, by = 1),1)) +
             theme(axis.title.x=element_text(size=12, face="bold"), axis.title.y=element_text(size=12, face="bold")) + 
-            xlab("Percent participation in trials for FDA approval") +
-            ylab("Number of FDA approvals") +
-            ggtitle("Number of FDA approvals with under 25 percent participation by demographic in its trials") +
+            xlab("Percent participation") +
+            ylab("Count of FDA approvals") +
+            #ggtitle("Number of FDA approvals with under 25 percent participation by demographic in its trials") +
             facet_wrap(~Demographic, ncol=1)
         
         plot
@@ -804,7 +816,11 @@ server <- function(input, output) {
             geom_boxplot(outlier.shape = NA) +
             scale_fill_brewer(palette="PuRd")+
             geom_point(position=position_jitterdodge(),alpha=0.1) +
-            scale_y_continuous(breaks = round(seq(0, 100, by = 10),1))
+            scale_y_continuous(breaks = round(seq(0, 100, by = 10),1)) +
+            theme(legend.position = "top",
+                  legend.title = element_blank(),
+                  axis.title.x=element_text(size=12, face="bold"), 
+                  axis.title.y=element_text(size=12, face="bold"))
         
         if ( input$is_TA_Stratified ) {
             plot <- plot + 
