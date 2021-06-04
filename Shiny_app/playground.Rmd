@@ -235,6 +235,14 @@ summary_statistics_all_years
 ```
 
 
+```{r}
+trashy <- fda_approvals_long %>% filter(Demographic != "Asian")
+demographics_selected <- trashy %>% select(Demographic) %>% unique()
+                
+summary_statistics_all_years %>% filter(Demographic %in% demographics_selected$Demographic)
+
+
+```
 
 
 

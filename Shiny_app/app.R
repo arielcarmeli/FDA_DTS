@@ -53,34 +53,34 @@ averages <- averages %>% # Calculate number of people (% representation * Trial 
 averages_all_years <- averages %>% # Calculate weighted average (Demographic groups' enrollment / Total Enrollment) - all years
     group_by(Demographic) %>% 
     summarize(Demographic_enrollment = sum(Population), Total_enrollment = sum(Enrollment)) %>% 
-    mutate(Weighted_average = 100* Demographic_enrollment / Total_enrollment)
+    mutate(Weighted_average = round(100* Demographic_enrollment / Total_enrollment),1)
 
 averages <- averages %>% # Same as above but by year
     group_by(Approval_Year, Demographic) %>% 
     summarize(Demographic_enrollment = sum(Population), Total_enrollment = sum(Enrollment)) %>% 
-    mutate(Weighted_average = 100* Demographic_enrollment / Total_enrollment)
+    mutate(Weighted_average = round(100* Demographic_enrollment / Total_enrollment),1)
 
 # Calculate median representation
 approval_median <- fda_approvals_long %>% filter(Percentage != "NA") # create new df with non NA participation
 
 approval_median_all_years <- approval_median %>% # Calculate median enrollment percentage across all trials
     group_by(Demographic) %>% 
-    summarize(Median = median(Percentage))
+    summarize(Median = round(median(Percentage),1))
 
 approval_median <- approval_median %>% # Same as above but by year
     group_by(Approval_Year, Demographic) %>% 
-    summarize(Median = median(Percentage))
+    summarize(Median = round(median(Percentage),1))
 
 # Calculate mean representation treating each trial equally
 approval_mean <- fda_approvals_long %>% filter(Percentage != "NA") # create new df with non NA participation
 
 approval_mean_all_years <- approval_mean %>% # Calculate mean enrollment percentage across all trials (non weighted by enrollment)
     group_by(Demographic) %>% 
-    summarize(Average = mean(Percentage))
+    summarize(Average = round(mean(Percentage),1))
 
 approval_mean <- approval_mean %>% # Same as above but by year
     group_by(Approval_Year, Demographic) %>% 
-    summarize(Average = mean(Percentage))
+    summarize(Average = round(mean(Percentage),1))
 
 # Create combined dataset by Demographic
 summary_statistics_all_years <- data.frame(averages_all_years$Demographic, approval_median_all_years$Median, approval_mean_all_years$Average, averages_all_years$Weighted_average)
@@ -731,7 +731,7 @@ server <- function(input, output) {
             if (input$is_Year_labelled) { # Year and TA
                 demographics_selected <- approvals() %>% select(Demographic) %>% unique()
                 
-                summary_statistics %>% filter(Demographic %in% demographics_selected)
+                summary_statistics_all_years %>% filter(Demographic %in% demographics_selected$Demographic)
                 
                 #approvals() %>% 
                 #    group_by(Demographic, Therapeutic_Area, Approval_Year) %>% 
@@ -746,16 +746,26 @@ server <- function(input, output) {
             }
         }
         else if ( input$is_Year_labelled) { # Year only
-            approvals() %>% 
-                group_by(Demographic, Approval_Year) %>% 
-                summarize(Median = round(median(Percentage), 1), 
-                          Average = round(mean(Percentage), 1))
+            demographics_selected <- approvals() %>% select(Demographic) %>% unique()
+            
+            summary_statistics %>% filter(Demographic %in% demographics_selected$Demographic)
+            
+            #approvals() %>% 
+            #    group_by(Demographic, Approval_Year) %>% 
+            #    summarize(Median = round(median(Percentage), 1), 
+            #              Average = round(mean(Percentage), 1))
         }
         else{
-            approvals() %>% 
-                group_by(Demographic) %>% 
-                summarize(Median = round(median(Percentage), 1), 
-                          Average = round(mean(Percentage), 1))
+            
+            demographics_selected <- approvals() %>% select(Demographic) %>% unique()
+            
+            summary_statistics_all_years %>% filter(Demographic %in% demographics_selected$Demographic)
+            
+            #approvals() %>% 
+            #    group_by(Demographic) %>% 
+            #    summarize(Median = round(median(Percentage), 1), 
+            #              Average = round(mean(Percentage), 1))
+            
         }
     )
     
