@@ -67,24 +67,30 @@ ui <- fluidPage(
                          
                 mainPanel(
                  
-                    h2("Total enrollment by Therapeutic Area"),
-                    tags$a(href = "https://www.fda.gov/media/143592/download", "This graph recreates page 30 in 2015-19 DTS report"),
+                    h2("Total Number of Patients Enrolled in Clinical Trials by Therapeutic Area"),
+                    h6("Data: All FDA approvals from 2015-19. Excludes 2020 data in order to validate against FDA's 2015-2019 Drug Trial Snapshot report"),
+                    tags$a(href = "https://www.fda.gov/media/143592/download", "This graph closely recreates page 30 in FDA's 2015-19 DTS Drug Trial Snapshot report"),
                     plotOutput("Validation_Enrollment_by_TA", height=300, width = 1000),
                     
-                    h2("Demographics of Trial Participation"),
-                    tags$a(href = "https://www.fda.gov/media/143592/download", "This graph recreates page 9 in 2015-19 DTS report"),
+                    h2("Participation in Clinical Trials by Demographic"),
+                    h6("Data: All FDA approvals from 2015-19. Excludes 2020 data in order to validate against FDA's 2015-2019 Drug Trial Snapshot report"),
+                    tags$a(href = "https://www.fda.gov/media/143592/download", "This graph closely recreates page 9 in FDA's 2015-19 DTS Drug Trial Snapshot report"),
                     plotOutput("Validation_Demographics", height=175, width = 1000),
                     
-                    h2("Total approvals by Year"),
+                    h2("Total Approvals by Year"),
+                    h6("Data: All FDA approvals from 2015-20"),
                     plotOutput("Approvals_DS", height=450, width = 1000),
                     
-                    h2("Total patients by Year"),
+                    h2("Total Patients by Year"),
+                    h6("Data: All FDA approvals from 2015-20"),
                     plotOutput("Patients_DS", height=450, width = 1000),
                     
                     h2("Enrollment by Therapeutic Area"),
+                    h6("Data: All FDA approvals from 2015-20"),
                     plotOutput("Enrollment_TA_boxplot_DS", height=300, width = 1000),
                      
-                    h2("Demographics reported"),
+                    h2("Data Quality -- Reporting of Participation by Demographic"),
+                    h6("Data: All FDA approvals from 2015-20"),
                     plotOutput("Demographics_reported", height=300, width = 1000),
                     
                 )
@@ -430,20 +436,22 @@ server <- function(input, output) {
         plot <- approvals_DS() %>% 
             ggplot(aes(x=Approval_Year, y=Enrollment)) + 
             geom_col(width = 0.7) +
+            #geom_text(aes(label=Enrollment), position = position_stack(vjust = 0.5), size = 4) +
             #geom_text(aes(label = Enrollment)) +
             #geom_text(aes(label= sum(Enrollment)), vjust=-1) +
             #geom_text(size = 3, position = position_stack(vjust = 0.5)) +
             xlab("Year") + 
             ylab("Number of patients enrolled in pivotal clinical trial") +
             theme(axis.title.x=element_text(size=12, face="bold"), axis.title.y=element_text(size=12, face="bold")) + 
-            scale_x_continuous(breaks = round(seq(min(2015), max(2020), by = 1),1)) #+ 
-            #expand_limits(y=c(0, 70))
+            scale_x_continuous(breaks = round(seq(min(2015), max(2020), by = 1),1))
         
         if ( input$DS_TA_stratify ){
             plot <- plot + 
-                facet_wrap(~Therapeutic_Area) #+ 
-                #expand_limits(y=c(0, 40))
-            
+                facet_wrap(~Therapeutic_Area) + 
+                expand_limits(y=c(0, 75000))
+        }
+        else{
+            plot <- plot + expand_limits(y=c(0, 120000))
         }
         
         plot
@@ -519,8 +527,8 @@ server <- function(input, output) {
             ylab("Number of Participants") + 
             scale_y_continuous(breaks = round(seq(min(0), max(70000), by = 5000),1)) +
             #theme(text = element_text(size=20)) +
-            theme(axis.title.x=element_text(size=12, face="bold"), axis.title.y=element_text(size=12, face="bold")) +
-            ggtitle("Patient enrollment by Therapeutic Area [FDA approvals 2015-19; excludes 2020 for purposes of dataset validation]")
+            theme(axis.title.x=element_text(size=12, face="bold"), axis.title.y=element_text(size=12, face="bold"))# +
+            #ggtitle("Patient enrollment by Therapeutic Area")
         
         Patient_participation_graph
         
@@ -611,8 +619,8 @@ server <- function(input, output) {
             theme(axis.title.x=element_text(size=12, face="bold"), axis.title.y=element_text(size=12, face="bold")) + 
             facet_wrap(~Demographic, scales = "free") +
             xlab("") +
-            ylab("% Participation") +
-            ggtitle("Demographics of Trial Participation [FDA approvals 2015-19; excludes 2020 for purposes of dataset validation]")
+            ylab("% Participation") #+
+            #ggtitle("Demographics of Trial Participation [FDA approvals 2015-19; excludes 2020 for purposes of dataset validation]")
         
         demographic_participation_graph
         
