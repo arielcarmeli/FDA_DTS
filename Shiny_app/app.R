@@ -10,11 +10,18 @@ library(RColorBrewer)
 library(plotly)
 #library(kableExtra)
 
-# Read in the data
+########################
+### READ IN THE DATA ###
+########################
+
 print( "Loading data ..." )
 fda_approvals <- read.csv('FDA_Drug_Trials_Snapshots_2015-20.csv')
 disease_burden <- read.csv('Disease_burden.csv')
 print( "Data loaded!" )
+
+############################
+### PROCESS FDA DTS DATA ###
+############################
 
 # Change class type of select variables to aid in data processing and visualization
 fda_approvals$Enrollment <- as.numeric(as.character(fda_approvals$Enrollment))
@@ -32,6 +39,60 @@ fda_approvals_long <- pivot_longer(fda_approvals, cols = Female:Age_80_or_older,
 
 # Change class type of variable in long
 fda_approvals_long$Percentage <- as.numeric(as.character(fda_approvals_long$Percentage))
+
+#################################
+### CREATE SUMMARY STATISTICS ###
+#################################
+
+# Calculate mean representation treating weighting each trial by enrollment size
+averages <- fda_approvals_long %>% filter(Percentage != "NA") # create new df with non NA participation
+
+averages <- averages %>% # Calculate number of people (% representation * Trial Enrollment)
+    mutate(Population = round((Percentage / 100) * Enrollment))
+
+averages_all_years <- averages %>% # Calculate weighted average (Demographic groups' enrollment / Total Enrollment) - all years
+    group_by(Demographic) %>% 
+    summarize(Demographic_enrollment = sum(Population), Total_enrollment = sum(Enrollment)) %>% 
+    mutate(Weighted_average = 100* Demographic_enrollment / Total_enrollment)
+
+averages <- averages %>% # Same as above but by year
+    group_by(Approval_Year, Demographic) %>% 
+    summarize(Demographic_enrollment = sum(Population), Total_enrollment = sum(Enrollment)) %>% 
+    mutate(Weighted_average = 100* Demographic_enrollment / Total_enrollment)
+
+# Calculate median representation
+approval_median <- fda_approvals_long %>% filter(Percentage != "NA") # create new df with non NA participation
+
+approval_median_all_years <- approval_median %>% # Calculate median enrollment percentage across all trials
+    group_by(Demographic) %>% 
+    summarize(Median = median(Percentage))
+
+approval_median <- approval_median %>% # Same as above but by year
+    group_by(Approval_Year, Demographic) %>% 
+    summarize(Median = median(Percentage))
+
+# Calculate mean representation treating each trial equally
+approval_mean <- fda_approvals_long %>% filter(Percentage != "NA") # create new df with non NA participation
+
+approval_mean_all_years <- approval_mean %>% # Calculate mean enrollment percentage across all trials (non weighted by enrollment)
+    group_by(Demographic) %>% 
+    summarize(Average = mean(Percentage))
+
+approval_mean <- approval_mean %>% # Same as above but by year
+    group_by(Approval_Year, Demographic) %>% 
+    summarize(Average = mean(Percentage))
+
+# Create combined dataset by Demographic
+summary_statistics_all_years <- data.frame(averages_all_years$Demographic, approval_median_all_years$Median, approval_mean_all_years$Average, averages_all_years$Weighted_average)
+names(summary_statistics_all_years) <- c("Demographic", "Median", "Average", "Weighted_average")
+
+# Create combined dataset by Year and Demographic
+summary_statistics <- data.frame(averages$Approval_Year, averages$Demographic, approval_median$Median, approval_mean$Average, averages$Weighted_average)
+names(summary_statistics) <- c("Approval_Year", "Demographic", "Median", "Average", "Weighted_average")
+
+#######################
+### DEFINE SHINY UI ###
+#######################
 
 ui <- fluidPage(
     
@@ -273,6 +334,10 @@ ui <- fluidPage(
         )
     )
 )
+
+################################
+### DYNAMIC DATA INTERACTION ###
+################################
 
 server <- function(input, output) {
 
@@ -664,10 +729,14 @@ server <- function(input, output) {
         
         if ( input$is_TA_Stratified ) { 
             if (input$is_Year_labelled) { # Year and TA
-                approvals() %>% 
-                    group_by(Demographic, Therapeutic_Area, Approval_Year) %>% 
-                    summarize(Median = round(median(Percentage), 1), 
-                              Average = round(mean(Percentage), 1))
+                demographics_selected <- approvals() %>% select(Demographic) %>% unique()
+                
+                summary_statistics %>% filter(Demographic %in% demographics_selected)
+                
+                #approvals() %>% 
+                #    group_by(Demographic, Therapeutic_Area, Approval_Year) %>% 
+                #    summarize(Median = round(median(Percentage), 1), 
+                #              Average = round(mean(Percentage), 1))
             }
             else{ # TA only
                 approvals() %>% 
