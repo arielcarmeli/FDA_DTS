@@ -259,7 +259,79 @@ fda_approvals_long %>%
 
 ```
 
+## Highlight missing data
+
+```{r}
+
+# Missing data
+no_approvals <- fda_approvals %>% 
+  group_by(Approval_Year) %>% 
+  summarize(Approvals = n()) 
+
+reported_values <- fda_approvals_long %>% 
+  filter(Percentage != "NA") %>% 
+  filter(Demographic == "White" | Demographic == "Black" | Demographic == "Asian" | Demographic == "Hispanic") %>% 
+  group_by(Approval_Year, Demographic) %>% 
+  summarize(Non_NR = n() / 3) %>% 
+  pivot_wider(names_from = Demographic, values_from = Non_NR, values_fill = 0)
+
+missing_data <- data.frame(no_approvals$Approval_Year, 
+                           no_approvals$Approvals, 
+                           reported_values$Asian,
+                           reported_values$Black,
+                           reported_values$White,
+                           reported_values$Hispanic)
+
+names(missing_data) <- c("Approval_Year", "Approvals", "Asian", "Black", "White", "Hispanic")
+
+missing_data <- missing_data %>% 
+  mutate(Asian = round(100 * Asian / Approvals, 0),
+         Black = round(100 * Black / Approvals, 0),
+         White = round(100 * White / Approvals, 0),
+         Hispanic = round(100 * Hispanic / Approvals, 0))
+
+missing_data
+
+```
 
 
+```{r}
+
+# Determine demographics to include in data quality assessment
+demographics <- c("Female", 
+                  "Age_65_or_older", 
+                  "Asian",
+                  "Black",
+                  "Hispanic",
+                  "White")
+
+# Calculate total number of approvals by Year
+num_approvals <- fda_approvals %>% 
+  group_by(Approval_Year) %>% 
+  summarise(Count = n())
+num_approvals <- num_approvals$Count
+
+# Grab number of non missing values by Demographic and Year
+not_missing_values <- fda_approvals_long %>% 
+  filter(Percentage != "NA") %>% 
+  filter(Demographic %in% demographics)
+
+not_missing_values <- not_missing_values %>% 
+  group_by(Approval_Year, Demographic) %>% 
+  summarise(Count = n()) %>% 
+  pivot_wider(names_from = Demographic, values_from = Count, values_fill = 0)
+
+not_missing_values <- not_missing_values[, c("Approval_Year", "Female", "Age_65_or_older", "Asian", "Black", "Hispanic", "White")]
+
+# Subtract non missing from total to get number of missing values
+missing_values <- num_approvals - not_missing_values
+
+# Calculate % of entries which are missing
+missing_values_percentage <- round(missing_values / num_approvals * 100)
+missing_values_percentage$Approval_Year <- not_missing_values$Approval_Year # Copy the original Years to replace unecessary math done on the Year column
+
+missing_values_percentage
+
+```
 
 

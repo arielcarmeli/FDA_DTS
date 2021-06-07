@@ -90,6 +90,43 @@ names(summary_statistics_all_years) <- c("Demographic", "Median", "Average", "We
 summary_statistics <- data.frame(averages$Approval_Year, averages$Demographic, approval_median$Median, approval_mean$Average, averages$Weighted_average)
 names(summary_statistics) <- c("Approval_Year", "Demographic", "Median", "Average", "Weighted_average")
 
+#############################
+### QUANTIFY MISSING DATA ###
+#############################
+
+# Determine demographics to include in data quality assessment
+demographics <- c("Female", 
+                  "Age_65_or_older", 
+                  "Asian",
+                  "Black",
+                  "Hispanic",
+                  "White")
+
+# Calculate total number of approvals by Year
+num_approvals <- fda_approvals %>% 
+    group_by(Approval_Year) %>% 
+    summarise(Count = n())
+num_approvals <- num_approvals$Count
+
+# Grab number of non missing values by Demographic and Year
+not_missing_values <- fda_approvals_long %>% 
+    filter(Percentage != "NA") %>% 
+    filter(Demographic %in% demographics)
+
+not_missing_values <- not_missing_values %>% 
+    group_by(Approval_Year, Demographic) %>% 
+    summarise(Count = n()) %>% 
+    pivot_wider(names_from = Demographic, values_from = Count, values_fill = 0)
+
+not_missing_values <- not_missing_values[, c("Approval_Year", "Female", "Age_65_or_older", "Asian", "Black", "Hispanic", "White")]
+
+# Subtract non missing from total to get number of missing values
+missing_values <- num_approvals - not_missing_values
+
+# Calculate % of entries which are missing
+missing_values_percentage <- round(missing_values / num_approvals * 100)
+missing_values_percentage$Approval_Year <- not_missing_values$Approval_Year # Copy the original Years to replace unecessary math done on the Year column
+
 #######################
 ### DEFINE SHINY UI ###
 #######################
@@ -101,7 +138,46 @@ ui <- fluidPage(
     tabsetPanel( 
         
         tabPanel("Welcome + Instructions",
-            
+            mainPanel(
+                h3("Welcome"),
+                p("Welcome to our Data Explorer of the FDA Drug Trials Snapshots Data from 2015-2020"),
+                p("The FDA Snapshots program began in 2015 and reflects approved New Molecular Entities (NMEs)
+                  and original biologics, and the data from pivotal clinical trials."),
+                p("The purpose of this Data Explorer is to visualize the current state of clinical trial participation
+                  across age, sex, race, ethnicity for 288 FDA approvals from 2015-2020. We hope this data
+                  empowers you and your organization to make evidence-based decisions to advance health 
+                  equity in research and clinical care"),
+                p("Our team at Harvard Medical School has scraped and processed publicly available data 
+                  from FDA's website to create this first-of-its-kind electronically accessible dataset. 
+                  In addition to exploring this data visualization tool, you can download the dataset here:"),
+                downloadButton("download_raw_data", "Download 2015-2020 FDA Drug Trials Snapshots Data"),
+                br(),
+                br(),
+                
+                h3("Contents of this Data Explorer"),
+                tags$b("Descriptive Statistics tab"),
+                p("To get warmed up. Static high level summaries and trends of FDA approvals and clinical trial enrollment, 
+                  and overview of missing data."),
+                tags$b("Explore FDA Approvals"),
+                p("To explore. Dynamic inputs allow you to filter clinical trial enrollment by age, sex, 
+                  race, ethnicity and visualize the distributions of these demographics over time and 
+                  across Therapeutic Areas"),
+                tags$b("Detail by Therapeutic Area"),
+                p("To hone in on specific Therapeutic Areas. Dynamic inputs to explore clinical trial enrollment
+                  across demographics and pharma sponsor, and compare enrollment to disease burden"),
+                br(),
+
+                h3("Sources"),
+                tags$a(href = "https://www.fda.gov/media/143592/download", 
+                       "FDA's 2015-19 DTS Drug Trials Snapshots Summary Report"),
+                br(),
+                tags$a(href = "https://www.fda.gov/drugs/drug-approvals-and-databases/drug-trials-snapshots", 
+                       "FDA website with 2015, 2016, 2017, 2018, 2019, 2020 annual reports"),
+                br(),
+                tags$a(href = "https://www.fda.gov/drugs/drug-approvals-and-databases/drug-trials-snapshots", 
+                       "FDA website with Drug Trials Snapshot for each individual drug/FDA Approval"),
+                
+            )
         ),
         
         tabPanel("Descriptive Statistics",
@@ -152,7 +228,7 @@ ui <- fluidPage(
                      
                     h2("Data Quality -- Reporting of Participation by Demographic"),
                     h6("Data: All FDA approvals from 2015-20"),
-                    plotOutput("Demographics_reported", height=300, width = 1000),
+                    DT::dataTableOutput("Demographics_reported", height=300, width = 1000),
                     
                 )
             )
@@ -362,6 +438,12 @@ server <- function(input, output) {
     # reactive for descriptive statistics
     approvals_DS <- reactive({
         selection <- fda_approvals
+        selection
+    })
+    
+    missing <- reactive({
+        selection <- missing_values_percentage
+        selection
     })
     
     # default no adjustment
@@ -475,6 +557,15 @@ server <- function(input, output) {
         selection
         
     })
+    
+    output$download_raw_data <- downloadHandler(
+        filename = function() {
+            paste("FDA_Drug_Trials_Snapshots_2015_to_2020.csv", sep = "")
+        },
+        content = function(file) {
+            write.csv(approvals_DS(), file, row.names = FALSE)
+        }
+    )
     
     output$Approvals_DS <- renderPlot({
         
@@ -698,6 +789,11 @@ server <- function(input, output) {
         
     })
 
+    output$Demographics_reported <- DT::renderDataTable({
+        missing()
+    })
+    
+    
     output$individualPlot <- renderPlotly({
         
         plot <- approvals() %>% 
