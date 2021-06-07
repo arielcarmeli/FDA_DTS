@@ -305,7 +305,11 @@ ui <- fluidPage(
                      h6("Each dot represents a pivotal clinical trial for 1 FDA approval"),
                      plotlyOutput("individualPlot", height=700, width = 1200),
 
-                     h2("Data Table: Median and Average of Clinical Trial Participation"),                     
+                     h2("Data Table: Median and Average of Clinical Trial Participation"),
+                     h6("Median and Average are calculated without accounting for trial size."),
+                     h6("Weighted average equals total number of individuals per demographic divided 
+                        by total number of individuals in all demographics. FDA Drug Trial Snapshot reports 
+                        only provide weighted average."),
                      DT::dataTableOutput("stats_summary_Table"),
                                           
                      h2("Trend in Clinical Trial Participation by Demographic Over Time"),
@@ -315,7 +319,9 @@ ui <- fluidPage(
                      plotOutput("change_over_time", height = 700),
 
                      h2("Count of FDA Approvals Per Participation in Clinical Trials"),
-                     plotOutput("participationCountPlot", height=700),
+                     h6("Here we zoom in to the tail of the distribution and allow you to count how many 
+                        FDA approvals were based trials with 0, 1, 2, etc. percent participation by a demographic."),
+                     plotOutput("participationCountPlot", height=400),
                      
                      h2("Approval Details"),
                      DT::dataTableOutput("approvalsTable"),
@@ -325,6 +331,15 @@ ui <- fluidPage(
         tabPanel("Detail by Therapeutic Area",
             sidebarLayout(
                 sidebarPanel(
+                    
+                    selectInput(
+                        "therapeutic_area",
+                        "Therapeutic Area",
+                        choices=sort(unique(fda_approvals$Therapeutic_Area)),
+                        selected = "Oncology",
+                        multiple=FALSE
+                    ),
+                    
                      selectInput(
                          "race_TA_page",
                          "Race",
@@ -367,11 +382,18 @@ ui <- fluidPage(
                      ),
                      
                      selectInput(
-                         "therapeutic_area",
-                         "Therapeutic Area",
-                         choices=sort(unique(fda_approvals$Therapeutic_Area)),
-                         selected = "Oncology",
-                         multiple=FALSE
+                         "Stratify_by",
+                         "Stratify by (Pharma Sponsor, Therapeutic Area subgroup):",
+                         choices = list("None", "Sponsor", "TA_subgroup"),
+                         selected = "None",
+                         multiple = FALSE
+                     ),
+                     
+                     sliderInput("Sponsor_size",
+                                 "If too many sponsors, filter >= X approvals",
+                                 min=1,
+                                 max=3,
+                                 value=1
                      ),
                      
                      radioButtons( 
@@ -382,33 +404,24 @@ ui <- fluidPage(
                          selected=FALSE
                      ),
                      
-                     selectInput(
-                         "Stratify_by",
-                         "Stratify by (Pharma Sponsor, Therapeutic Area subgroup):",
-                         choices = list("None", "Sponsor", "TA_subgroup"),
-                         selected = "None",
-                         multiple = FALSE
-                     ),
-                     
-                     sliderInput("Sponsor_size",
-                                 "(If stratified by Pharma Sponsor) Show sponsors with >= approvals",
-                                 min=1,
-                                 max=3,
-                                 value=1
-                     ),
                      width = 2
                      
                  ), 
                  mainPanel(
                      
-                     h2("How consistent is diversity in FDA approvals in selected TA?"),
-                     plotlyOutput("TA_individualPlot", height = 700),
+                     h2("Distribution of Participation by Demographic in Clinical Trials Across FDA approvals"),
+                     h6("Each dot represents a pivotal clinical trial for 1 FDA approval in the 
+                        therapeutic area you have selected"),
+                     plotlyOutput("TA_individualPlot", height = 600),
                      
-                     h2("How does clinical trial representation compare with disease burden?"),
+                     h2("Trend in Clinical Trial Participation by Demographic Over Time"),
+                     h6("Boxplots represents 5 points in the distribution: Middle line is median. 
+                        Ends of the box are 1st and 3rd quartile.
+                        Ends of the whiskers are 1.5 * inter-quartile range from the closer of 1st or 3rd quartile"),
+                     plotOutput("TA_change_over_time", height=400),
+                     
+                     h2("Comparison of clinical trial representation and disease burden"),
                      plotOutput("TA_Disease_Burden_Comparison", height = 700),
-                     
-                     h2("Has diversity in clinical trials improved in selected TA from 2015-2020?"),
-                     plotOutput("TA_cum_participationCountPlot", height=700),
                      
                      h2("Approval Details"),
                      DT::dataTableOutput("TA_approvalsTable"),
@@ -426,11 +439,9 @@ server <- function(input, output) {
 
     # reactive for disease burden
     disease_burden <- reactive({
-        selection <- disease_burden_df
-        
-        if ( !is.null( input$therapeutic_area ) ) {
-            selection <- selection %>% filter( Therapeutic_Area %in% input$therapeutic_area )
-        }
+        selection <- disease_burden %>% 
+            filter(White != "NA") %>% # filter out NAs
+            filter( Therapeutic_Area %in% input$therapeutic_area ) # Filter per user input on TA
         
         selection
     })
@@ -793,7 +804,6 @@ server <- function(input, output) {
         missing()
     })
     
-    
     output$individualPlot <- renderPlotly({
         
         plot <- approvals() %>% 
@@ -887,18 +897,21 @@ server <- function(input, output) {
         plot <- approvals_count() %>% 
             group_by(Demographic, Percentage) %>% 
             summarize(Count = sum(Count)) %>% 
-            filter(Percentage <= 25) %>%
+            filter(Percentage <= 20) %>%
             ggplot(aes(Percentage, y=Count)) +
             geom_bar(stat = "identity", position = 'dodge', width = 0.8) +
             geom_text(aes(label=Count), position = position_dodge(0.9), vjust=-0.3, size=3) +
             #ylim(0,65) +
             expand_limits(y=c(0, 65)) +
-            scale_x_continuous(breaks = round(seq(0, 25, by = 1),1)) +
-            theme(axis.title.x=element_text(size=12, face="bold"), axis.title.y=element_text(size=12, face="bold")) + 
+            scale_x_continuous(breaks = round(seq(0, 20, by = 1),1)) +
+            theme(axis.title.x=element_text(size=12, face="bold"), 
+                  axis.title.y=element_text(size=12, face="bold"),
+                  axis.ticks.y = element_blank(),
+                  axis.text.y = element_blank()) + 
             xlab("Percent participation") +
             ylab("Count of FDA approvals") +
             #ggtitle("Number of FDA approvals with under 25 percent participation by demographic in its trials") +
-            facet_wrap(~Demographic, ncol=1)
+            facet_wrap(~Demographic, ncol=2)
         
         plot
     })
@@ -944,16 +957,14 @@ server <- function(input, output) {
             plot <- plot + 
                 geom_jitter(width = 0.2, aes(colour=Demographic, size = Enrollment)) + 
                 theme(legend.position = "top", legend.title = element_blank()) +
-                scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
-                ggtitle("Participation in clinical trials by demographic <br> Each dot represents % participation in one trial")
+                scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1))
             
         }   
         else{
             plot <- plot + 
                 geom_jitter(width = 0.2, aes(colour=Demographic)) + 
                 theme(legend.position = "top", legend.title = element_blank()) +
-                scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) +
-                ggtitle("Participation in clinical trials by demographic <br> Each dot represents % participation in one trial")
+                scale_y_continuous(breaks = round(seq(min(0), max(100), by = 5),1)) 
         }
         
         if ("None" %in% input$Stratify_by){
@@ -972,7 +983,16 @@ server <- function(input, output) {
                 scale_y_continuous(breaks = round(seq(min(0), max(100), by = 10),1))
         }
         
-        plot
+        plot <- plot + 
+            theme(axis.text.x = element_text(size=8),
+                  axis.text.y = element_text(size=8),
+                  axis.title.x=element_text(size=12, face="bold"),
+                  axis.title.y=element_text(size=12, face="bold"))
+        
+        #plot
+        ggplotly(plot) %>% 
+            layout(legend = list(orientation = "h", y = 1.1, x = 0.03))
+        
     })
     
     output$TA_Disease_Burden_Comparison <- renderPlot({
@@ -996,27 +1016,23 @@ server <- function(input, output) {
         
     })
     
-    output$TA_cum_participationCountPlot <- renderPlot({
-        
-        plot <- approvals_TA() %>%
-            ggplot(aes(Percentage/100, colour = factor(Approval_Year))) + stat_ecdf(geom = "step") +
-            scale_x_continuous(breaks = round(seq(min(0), max(1), by = 0.05),2)) +
-            scale_y_continuous(breaks = round(seq(min(0), max(1), by = 0.05),2)) +
-            theme(axis.title.x = element_text(size=15), 
-                  axis.title.y = element_text(size=15),
-                  axis.text.x = element_text(size=8),
-                  axis.text.y = element_text(size=8),
-                  title = element_text(size=15),
-                  legend.text=element_text(size=20), 
-                  legend.position = "top", 
-                  legend.title = element_blank()
-            ) +
-            facet_wrap(~Demographic, ncol = 2) + 
-            ylab("Cumulative percentage of FDA approvals") +
-            xlab("Representation in clinical trials") +
-            ggtitle("Cumulative distribution of Demographic participation in trials by year")
+    output$TA_change_over_time <- renderPlot({
+
+        plot <- approvals_TA() %>% 
+            #filter(Demographic %in% dems) %>% 
+            filter(Percentage != "NA") %>% 
+            ggplot(aes(x = Demographic, y = Percentage, fill = factor(Approval_Year))) +
+            geom_boxplot(outlier.shape = NA) +
+            scale_fill_brewer(palette="PuRd")+
+            geom_point(position=position_jitterdodge(),alpha=0.1) +
+            scale_y_continuous(breaks = round(seq(0, 100, by = 5),1)) +
+            theme(legend.position = "top",
+                  legend.title = element_blank(),
+                  axis.title.x=element_text(size=12, face="bold"), 
+                  axis.title.y=element_text(size=12, face="bold"))
         
         plot
+        
     })
     
     output$TA_approvalsTable <- DT::renderDataTable(

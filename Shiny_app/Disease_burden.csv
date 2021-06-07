@@ -1,4 +1,4 @@
-﻿Therapeutic_Area,Disease,Metric,Year,Asian,Black,Hispanic,White
+﻿Therapeutic_Area,Indication,Burden_Metric,Burden_Year,Asian,Black,Hispanic,White
 Anesthesia and Analgesia,,,,,,,
 Cardiovascular Diseases,Hypertension,,,,,,
 Cardiovascular Diseases,Heart failure,,,,,,
