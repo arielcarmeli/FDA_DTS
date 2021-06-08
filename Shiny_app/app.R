@@ -133,19 +133,19 @@ missing_values_percentage$Approval_Year <- not_missing_values$Approval_Year # Co
 
 # Read in data
 approvals_trim <- fda_approvals %>% select(Brand_Name, Approval_Year, Therapeutic_Area, TA_subgroup, Indication, Asian, Black, Hispanic, White)
-disease_burden <- disease_burden %>% filter(White != "NA")
+disease_burden_long <- disease_burden %>% filter(White != "NA")
 
 # Turn both data frames into long
 approvals_trim <- approvals_trim %>% pivot_longer(cols = Asian:White,
                                                     names_to = "Demographic",
                                                     values_to ="Enrollment")
-disease_burden <- disease_burden %>% pivot_longer(cols = Asian:White, 
+disease_burden_long <- disease_burden_long %>% pivot_longer(cols = Asian:White, 
                                                   names_to = "Demographic", 
                                                   values_to = "Burden")
-disease_burden$Burden <- disease_burden$Burden * 100 # Multiply disease burden from percentage to ones
+disease_burden_long$Burden <- disease_burden_long$Burden * 100 # Multiply disease burden from percentage to ones
 
 # Merge the two df's along indication and demographic
-comparison_df <- right_join(approvals_trim, disease_burden, 
+comparison_df <- right_join(approvals_trim, disease_burden_long, 
                             by = c("Therapeutic_Area" = "Therapeutic_Area", 
                                    "Indication" = "Indication",
                                    "Demographic" = "Demographic"))
@@ -458,7 +458,10 @@ ui <- fluidPage(
                      plotOutput("TA_change_over_time", height=400),
                      
                      h2("Comparison of clinical trial representation and disease burden"),
+                     h6("Only available (for now) with oncology and infectious disease. 
+                        Bar chart below represents all 2015-2020 FDA approvals"),
                      plotOutput("TA_Disease_Burden_Comparison", height = 700),
+                     DT::dataTableOutput("Disease_Burden_table"),
                      
                      h2("Approval Details"),
                      DT::dataTableOutput("TA_approvalsTable"),
@@ -475,12 +478,14 @@ ui <- fluidPage(
 server <- function(input, output) {
 
     # reactive for disease burden
-    disease_burden <- reactive({
+    disease_burden_table <- reactive({
+        
         selection <- disease_burden %>% 
             filter(White != "NA") %>% # filter out NAs
             filter( Therapeutic_Area %in% input$therapeutic_area ) # Filter per user input on TA
         
         selection
+        
     })
     
     # reactive for descriptive statistics
@@ -1045,15 +1050,39 @@ server <- function(input, output) {
     output$TA_Disease_Burden_Comparison <- renderPlot({
         
         # Plot stacked bar
+        # https://www.datanovia.com/en/blog/awesome-list-of-hexadecimal-colors-you-should-have/
+        group.colors <- c("Over represented" = "#6699FF", # Darker Blue
+                          "Appropriately represented" = "#99CCFF", # Medium Blue
+                          "Under represented" = "#CC3333", #Red
+                          "Demographic not collected in trial" = "#999999") #Grey
+        
         plot <- disease_burden_comparison() %>% 
-            ggplot(aes(fill=Comparison, y=Count, x=Demographic, label = Count)) + 
+            ggplot(aes(fill=factor(Comparison, levels = c("Demographic not collected in trial",
+                                                          "Under represented",
+                                                          "Appropriately represented",
+                                                          "Over represented")), 
+                                   y=Count, 
+                                   x=Demographic, 
+                                   label = Count)) + 
             geom_bar(position="stack", stat="identity") +
             facet_wrap(~Indication) + 
-            geom_text(size = 3, position = position_stack(vjust = 0.5))
+            geom_text(size = 3, position = position_stack(vjust = 0.5)) + 
+            scale_fill_manual(values=group.colors) + 
+            theme(axis.text = element_text(size=11),
+                  axis.title=element_text(size=12, face="bold"),
+                  strip.text.x = element_text(size = 12),
+                  legend.position = "top",
+                  legend.title = element_blank())
         
         plot
         
     })
+    
+    output$Disease_Burden_table <- DT::renderDataTable(
+        
+        disease_burden_table()
+
+    )
     
     output$TA_change_over_time <- renderPlot({
 
@@ -1073,7 +1102,7 @@ server <- function(input, output) {
         plot
         
     })
-    
+
     output$TA_approvalsTable <- DT::renderDataTable(
         approvals_TA() %>% 
             #select(-Enrollment_bucket) %>%
