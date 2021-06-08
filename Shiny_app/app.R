@@ -377,6 +377,23 @@ ui <- fluidPage(
                         multiple=FALSE
                     ),
                     
+                    #selectInput(
+                    #    "Stratify_by",
+                    #    "Stratify by (Pharma Sponsor, Therapeutic Area subgroup):",
+                    #    choices = list("None", "Sponsor", "TA_subgroup"),
+                    #    selected = "None",
+                    #    multiple = FALSE
+                    #),
+                    
+                    radioButtons( 
+                        "Stratify_by", 
+                        "Stratify by", 
+                        choiceNames=list( "None", "Indication", "Sponsor"), 
+                        choiceValues=list("None", "Indication", "Sponsor"),
+                        selected="None"
+                    ),
+                    
+                    
                      selectInput(
                          "race_TA_page",
                          "Race",
@@ -416,14 +433,6 @@ ui <- fluidPage(
                          choices=unique(fda_approvals$Approval_Year),
                          selected = c(2015, 2016, 2017, 2018, 2019, 2020),
                          multiple=T
-                     ),
-                     
-                     selectInput(
-                         "Stratify_by",
-                         "Stratify by (Pharma Sponsor, Therapeutic Area subgroup):",
-                         choices = list("None", "Sponsor", "TA_subgroup"),
-                         selected = "None",
-                         multiple = FALSE
                      ),
                      
                      sliderInput("Sponsor_size",
@@ -1029,7 +1038,7 @@ server <- function(input, output) {
                 scale_y_continuous(breaks = round(seq(min(0), max(100), by = 10),1))
         }
         
-        if ("TA_subgroup" %in% input$Stratify_by) {
+        if ("Indication" %in% input$Stratify_by) {
             plot <- plot + 
                 facet_wrap(~TA_subgroup) + 
                 scale_y_continuous(breaks = round(seq(min(0), max(100), by = 10),1))
