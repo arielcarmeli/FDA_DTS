@@ -127,6 +127,43 @@ missing_values <- num_approvals - not_missing_values
 missing_values_percentage <- round(missing_values / num_approvals * 100)
 missing_values_percentage$Approval_Year <- not_missing_values$Approval_Year # Copy the original Years to replace unecessary math done on the Year column
 
+########################################
+### PROCESS DISEASE BURDENCOMPARISON ###
+########################################
+
+# Read in data
+approvals_trim <- fda_approvals %>% select(Brand_Name, Approval_Year, Therapeutic_Area, TA_subgroup, Indication, Asian, Black, Hispanic, White)
+disease_burden <- disease_burden %>% filter(White != "NA")
+
+# Turn both data frames into long
+approvals_trim <- approvals_trim %>% pivot_longer(cols = Asian:White,
+                                                    names_to = "Demographic",
+                                                    values_to ="Enrollment")
+disease_burden <- disease_burden %>% pivot_longer(cols = Asian:White, 
+                                                  names_to = "Demographic", 
+                                                  values_to = "Burden")
+disease_burden$Burden <- disease_burden$Burden * 100 # Multiply disease burden from percentage to ones
+
+# Merge the two df's along indication and demographic
+comparison_df <- right_join(approvals_trim, disease_burden, 
+                            by = c("Therapeutic_Area" = "Therapeutic_Area", 
+                                   "Indication" = "Indication",
+                                   "Demographic" = "Demographic"))
+
+# Make comparison
+comparison_df <- comparison_df %>% 
+    mutate(Comparison = case_when(
+        Enrollment > Burden ~ "Over represented",
+        Enrollment == Burden ~ "Appropriately represented",
+        Enrollment < Burden ~ "Under represented",
+        is.na(Enrollment) ~ "Demographic not collected in trial"
+    ))
+
+# Count number of each comparison types
+comparison_df_summary <- comparison_df %>% 
+    group_by(Therapeutic_Area, Indication, Demographic, Comparison) %>% 
+    summarise(Count = n())
+
 #######################
 ### DEFINE SHINY UI ###
 #######################
@@ -533,6 +570,7 @@ server <- function(input, output) {
     
     # Reactive expression to filter selected approvals on the TA/disease tab 
     approvals_TA <- reactive({
+        
         selection <- fda_approvals_long %>%
             select(Brand_Name, Therapeutic_Area, TA_subgroup, Indication, Indication_long, Enrollment, Demographic, Percentage, Approval_Year, Sponsor) %>%
             filter(Percentage != "NA") %>% 
@@ -564,6 +602,15 @@ server <- function(input, output) {
             selection <- selection %>% filter( Sponsor %in% sponsors$Sponsor )
             
         }
+        
+        selection
+        
+    })
+    
+    # Reactive expression to make comparison of trial enrollment and disease burden
+    disease_burden_comparison <- reactive({
+        
+        selection <- comparison_df_summary %>% filter( Therapeutic_Area %in% input$therapeutic_area )
         
         selection
         
@@ -996,23 +1043,15 @@ server <- function(input, output) {
     })
     
     output$TA_Disease_Burden_Comparison <- renderPlot({
-        burden <- disease_burden()# %>% sort(Disease)
-        trials <- approvals_TA() %>% 
-            pivot_wider(names_from = Demographic, values_from = Percentage) #%>% 
-        #    arrange(-Disease)
         
-        df <- data.frame(trials$Disease, 
-                         burden$Black,
-                         burden$Hispanic,
-                         trials$Black,
-                         trials$Hispanic)
+        # Plot stacked bar
+        plot <- disease_burden_comparison() %>% 
+            ggplot(aes(fill=Comparison, y=Count, x=Demographic, label = Count)) + 
+            geom_bar(position="stack", stat="identity") +
+            facet_wrap(~Indication) + 
+            geom_text(size = 3, position = position_stack(vjust = 0.5))
         
-        #titles <- c("Disease", "Black_burden", "Hispanic_burden")
-        
-        #Race_distribution_comparison <- data.frame(races, fda_snapshots, demographic_participation)
-        #names(Race_distribution_comparison) <- c("Race", "FDA_Snapshots", "Our_Database")
-        
-        #df %>% 
+        plot
         
     })
     

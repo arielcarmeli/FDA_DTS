@@ -342,7 +342,7 @@ missing_values_percentage
 disease_burden <- read.csv('Disease_burden.csv')
 
 # Read in data
-approvals_short <- fda_approvals %>% select(Brand_Name, Therapeutic_Area, TA_subgroup, Asian, Black, Hispanic, White)
+approvals_short <- fda_approvals %>% select(Brand_Name, Therapeutic_Area, TA_subgroup, Indication, Asian, Black, Hispanic, White)
 disease_burden <- disease_burden %>% filter(White != "NA")
 
 #disease_of_choice <- "HIV-1"
@@ -363,8 +363,7 @@ disease_burden$Burden <- disease_burden$Burden * 100
 
 # Index match
 comparison_df <- right_join(approvals_short, disease_burden, 
-                    by = c("Therapeutic_Area" = "Therapeutic_Area", 
-                           "TA_subgroup" = "Indication",
+                    by = c("Indication" = "Indication",
                            "Demographic" = "Demographic"))
 
 # Make comparison
@@ -377,18 +376,70 @@ comparison_df <- comparison_df %>%
   ))
 
 comparison_df_summary <- comparison_df %>% 
-  group_by(TA_subgroup, Demographic, Comparison) %>% 
+  group_by(Indication, Demographic, Comparison) %>% 
   summarise(Count = n())
 
 
 ggplot(comparison_df_summary, aes(fill=Comparison, y=Count, x=Demographic, label = Count)) + 
   geom_bar(position="stack", stat="identity") +
-  facet_wrap(~TA_subgroup) + 
+  facet_wrap(~Indication) + 
   geom_text(size = 3, position = position_stack(vjust = 0.5))
-
 
 ```
 
 
+# Check on disease burden
+
+```{r}
+
+# Read in data
+approvals_short <- fda_approvals %>% select(Brand_Name, Approval_Year, Therapeutic_Area, TA_subgroup, Indication, Asian, Black, Hispanic, White)
+disease_burden <- disease_burden %>% filter(White != "NA")
+
+# Turn both data frames into long
+approvals_short <- approvals_short %>% pivot_longer(cols = Asian:White,
+                                                    names_to = "Demographic",
+                                                    values_to ="Enrollment")
+disease_burden <- disease_burden %>% pivot_longer(cols = Asian:White, 
+                                                  names_to = "Demographic", 
+                                                  values_to = "Burden")
+disease_burden$Burden <- disease_burden$Burden * 100 # Multiply disease burden from percentage to ones
+
+# Filter per user inputs
+#if ( !is.null( input$race_TA_page ) | !is.null( input$ethnicity_TA_page ) ) { # Filter race and ethnicity
+#    approvals_short <- approvals_short %>% 
+#        filter( Demographic %in% input$race_TA_page | Demographic %in% input$ethnicity_TA_page )
+#}
+
+#if ( !is.null( input$year_TA_page ) ) { # Filter year
+#    approvals_short <- approvals_short %>% 
+#        filter( Approval_Year %in% input$year_TA_page )
+#}
+
+#if ( !is.null( input$therapeutic_area ) ) { # Filter by Therapeutic Area
+#    approvals_short <- approvals_short %>% 
+#        filter( Therapeutic_Area %in% input$therapeutic_area )
+#}
+
+# Merge the two df's along indication and demographic
+comparison_df <- right_join(approvals_short, disease_burden, 
+                            by = c("Therapeutic_Area" = "Therapeutic_Area", 
+                                   "Indication" = "Indication",
+                                   "Demographic" = "Demographic"))
+
+# Make comparison
+comparison_df <- comparison_df %>% 
+    mutate(Comparison = case_when(
+        Enrollment > Burden ~ "Over represented",
+        Enrollment == Burden ~ "Appropriately represented",
+        Enrollment < Burden ~ "Under represented",
+        is.na(Enrollment) ~ "Demographic not collected in trial"
+    ))
+
+comparison_df_summary <- comparison_df %>% 
+    group_by(Therapeutic_Area, Indication, Demographic, Comparison) %>% 
+    summarise(Count = n())
+
+```
 
 
