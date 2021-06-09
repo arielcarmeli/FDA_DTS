@@ -5,8 +5,9 @@ account: arielcarmeli
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 3917377
-bundleId: 4437716
+bundleId: 4693154
 url: https://arielcarmeli.shinyapps.io/FDA_DTS/
-when: 1617720098.64364
+when: 1623173718.72858
+lastSyncTime: 1623173718.7286
 asMultiple: FALSE
 asStatic: FALSE
